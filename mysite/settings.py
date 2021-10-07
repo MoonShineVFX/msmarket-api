@@ -9,38 +9,51 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+import sys
+import os
+import pymysql
+pymysql.install_as_MySQLdb()
 
-from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Set the project base directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', False)
+PRODUCTION = os.environ.get('PRODUCTION', False)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-t))(lh+x*z%xdhh_6a6tzu&z&ytr!+1l_dcqor_abfs^j#+_d$'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'himark')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = os.environ.get('API_HOST', '127.0.0.1').split(' ')
 
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apps.account',
+    'apps.category',
+    'apps.product',
 ]
+
+AUTH_USER_MODEL = 'account.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -69,15 +82,62 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
 
+# REST_FRAMEWORK
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'apps.renderers.ApiRenderer',
+    )
+}
+
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+
+SQL_HOST = os.environ.get('SQL_HOST')
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'dev': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'msmarket',
+        'USER': 'root',
+        'PASSWORD': os.environ.get('SQL_PASSWORD', None),
+        'HOST': 'localhost',
+        'PORT': os.environ.get('SQL_PORT', '3306'),
+    },
+    'test': {
+        'ENGINE': 'mysql.connector.django',
+        'NAME': 'msmarket',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'TEST': {
+            'CHARSET': "utf8",
+            'COLLATION': "utf8_general_ci",
+        }
+    },
+    # Equivalent URL:
+    # mysql+pymysql://<db_user>:<db_pass>@/<db_name>?unix_socket=<socket_path>/<cloud_sql_instance_name>
+    'production': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', ''),
+        'USER':  os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASS', ''),
+        # 在上文提到的 Connection Name
+        # 的前面加入 /cloudsql/
+
+        'HOST': f'{SQL_HOST}',
+    },
+
 }
+
+
+if PRODUCTION:
+    DATABASES['default'] = DATABASES['production']
+elif 'test' in sys.argv:
+    DATABASES['default'] = DATABASES['test']
+else:
+    DATABASES['default'] = DATABASES['dev']
 
 
 # Password validation
@@ -118,7 +178,33 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, "static"),
+    '/static/',
+)
+
+MEDIA_ROOT = '/docker_api/media/'
+if 'test' in sys.argv:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'test')
+
+MEDIA_URL = '/media/'
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Google Cloud Storage
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME', ''),
+
+
+if 'test' in sys.argv:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+
+# django-cors-headers
+CORS_ORIGIN_ALLOW_ALL = True
