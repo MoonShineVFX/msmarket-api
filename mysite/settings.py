@@ -27,7 +27,7 @@ PRODUCTION = os.environ.get('PRODUCTION', False)
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'himark')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'secret_key')
 
 
 ALLOWED_HOSTS = os.environ.get('API_HOST', '127.0.0.1').split(' ')
