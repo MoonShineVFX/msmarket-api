@@ -7,14 +7,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: ms-model-lib
+      REGION: asia-east1
+      DATABASE_INSTANCE: model-sql
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
       - name: Deploy to Cloud Run
-        env:
-          PROJECT_ID: ms-model-lib
-          REGION: asia-east1
-          DATABASE_INSTANCE: model-sql
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
           service: backend
