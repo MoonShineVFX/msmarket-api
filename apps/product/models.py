@@ -1,14 +1,12 @@
 from django.db import models
 from apps.account.models import EditorBaseModel
+from apps.category.models import Tag
 from os.path import splitext
 
 
 def get_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/products/<product_id>/
-    if type(instance) is Model:
-        return 'products/{0}/{1}'.format(str(instance.product.id), filename)
-    elif type(instance) is Image:
-        return 'products/{0}/{1}'.format(str(instance.product.id), filename)
+    return 'products/{0}/{1}'.format(str(instance.product.id), filename)
 
 
 class Format(models.Model):
@@ -32,6 +30,7 @@ class Model(EditorBaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     format = models.ForeignKey(Format, on_delete=models.CASCADE)
     renderer = models.ForeignKey(Renderer, on_delete=models.CASCADE)
+    tags = models.ManyToManyField(Tag)
     file = models.FileField(upload_to=get_directory_path)
     size = models.IntegerField()
 

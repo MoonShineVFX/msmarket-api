@@ -1,3 +1,6 @@
 from django.db import models
+from ..account.models import EditorBaseModel
 
-# Create your models here.
+
+class Tag(EditorBaseModel):
+    name = models.CharField(max_length=100)
