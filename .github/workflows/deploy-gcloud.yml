@@ -15,9 +15,11 @@ jobs:
           PROJECT_ID: ms-model-lib
           REGION: asia-east1
           DATABASE_INSTANCE: model-sql
+          SERVICE: backend
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
-          service: backend
+          service: ${{ env.SERVICE }}
+          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}
           source: .
           region: ${{ env.REGION }}
           credentials: ${{ secrets.CHT_FIVEG_GCP_SA_KEY }}
