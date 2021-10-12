@@ -19,9 +19,8 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
           service: ${{ env.SERVICE }}
-          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}
           source: .
           region: ${{ env.REGION }}
-          credentials: ${{ secrets.CHT_FIVEG_GCP_SA_KEY }}
+          credentials: ${{ secrets.GCP_SA_KEY }}
           env_vars: PRODUCTION=true,DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},SQL_HOST=${{ secrets.SQL_HOST }},DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }},API_HOST=${{ secrets.API_HOST }}
           flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{env.DATABASE_INSTANCE}}"
