@@ -1,7 +1,8 @@
 from django.db import models
 from apps.account.models import EditorBaseModel
 from apps.category.models import Tag
-from os.path import splitext
+from storages.backends.gcloud import GoogleCloudStorage
+from django.conf import settings
 
 
 def get_directory_path(instance, filename):
@@ -19,7 +20,8 @@ class Renderer(models.Model):
 
 class Product(EditorBaseModel):
     title = models.CharField(max_length=200)
-    preview = models.ImageField(upload_to=get_directory_path)
+    preview = models.ImageField(upload_to=get_directory_path,
+                                storage=GoogleCloudStorage(bucket=settings.GS_PUBLIC_BUCKET_NAME))
     description = models.TextField()
     model_count = models.IntegerField()
     texture_size = models.IntegerField()
@@ -37,7 +39,8 @@ class Model(EditorBaseModel):
 
 class Image(EditorBaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    file = models.ImageField(upload_to=get_directory_path)
+    file = models.ImageField(upload_to=get_directory_path,
+                             storage=GoogleCloudStorage(bucket=settings.GS_PUBLIC_BUCKET_NAME))
     size = models.IntegerField()
 
 

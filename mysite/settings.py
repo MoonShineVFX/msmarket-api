@@ -199,8 +199,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Google Cloud Storage
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME', ''),
-
+GS_BUCKET_NAME = '3dmodel-storage'
+GS_PUBLIC_BUCKET_NAME = 'ms-image-storage'
 
 if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
