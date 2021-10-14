@@ -205,6 +205,8 @@ GS_PUBLIC_BUCKET_NAME = 'ms-image-storage'
 if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
+# url path for image on gcp
+IMAGE_ROOT = ''
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True

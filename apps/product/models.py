@@ -22,6 +22,7 @@ class Product(EditorBaseModel):
     preview = models.ImageField(upload_to=get_directory_path,
                                 storage=PublicGoogleCloudStorage)
     description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=4)
     model_count = models.IntegerField()
     texture_size = models.IntegerField()
     status = models.IntegerField()
@@ -45,5 +46,5 @@ class Image(EditorBaseModel):
 
 class Price(EditorBaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    price = models.IntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=4)
     is_current = models.BooleanField(default=False)
