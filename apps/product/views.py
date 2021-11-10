@@ -1,11 +1,29 @@
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from .models import Product
+from ..category.models import category, category_key_2_id
+from . import serializers
+from ..pagination import ProductPagination
 
 
-class ProductList(ListAPIView):
-    queryset = Product.objects.all()
+class WebProductList(ListAPIView):
+    pagination_class = ProductPagination
+    serializer_class = serializers.WebProductListSerializer
+    queryset = Product.objects.prefetch_related('tags').all()
+
+    def filter_queryset(self, queryset):
+        category_key = self.request.query_params.get('type', 'all')
+        if category_key != "all":
+            queryset = queryset.filter(status=category_key_2_id[category_key])
+
+        tag_ids = self.request.query_params.get('tags', None)
+        if tag_ids:
+            tag_list = tag_ids.split(",")
+            for tag in tag_list:
+                queryset = queryset.filter(tags__id=tag)
+        return queryset
 
 
-class ProductDetail(RetrieveAPIView):
-    queryset = Product.objects.all()
+class WebProductDetail(RetrieveAPIView):
+    serializer_class = serializers.WebProductDetailSerializer
+    queryset = Product.objects.prefetch_related('tags', "images")
