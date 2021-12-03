@@ -19,11 +19,14 @@ class RendererSerializer(serializers.ModelSerializer):
 
 
 class ImageUrlSerializer(serializers.ModelSerializer):
-    url = serializers.CharField(source="file")
+    url = serializers.SerializerMethodField()
 
     class Meta:
         model = Image
         fields = ('id', 'url')
+
+    def get_url(self, instance):
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.file) if instance.file else None
 
 
 class WebProductListSerializer(serializers.ModelSerializer):
