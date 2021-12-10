@@ -1,5 +1,5 @@
 from django.db import models
-from apps.account.models import EditorBaseModel
+from apps.user.models import EditorBaseModel
 from apps.category.models import Tag
 from ..storage import PublicGoogleCloudStorage
 

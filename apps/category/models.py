@@ -1,5 +1,5 @@
 from django.db import models
-from ..account.models import EditorBaseModel
+from ..user.models import EditorBaseModel
 
 
 category = {

@@ -6,7 +6,7 @@ from django.contrib.auth.models import UserManager
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=50, null=True)
-
+    nick_name = models.CharField(max_length=50, null=True)
     is_deleted = models.BooleanField(default=False, blank=True)
     is_active = models.BooleanField(default=True, blank=True)
 
@@ -44,6 +44,8 @@ class EditorBaseModel(models.Model):
 
     class Meta:
         abstract = True
+
+    objects = models.Manager()
 
 
 class Customer(AbstractBaseUser):

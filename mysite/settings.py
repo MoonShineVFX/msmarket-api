@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import sys
 import os
 import pymysql
+from datetime import timedelta
 pymysql.install_as_MySQLdb()
 
 
@@ -41,14 +42,24 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
+    'django.contrib.messages',  # required for allauth
+    'django.contrib.sites',
     'django.contrib.staticfiles',
-    'apps.account',
+    'apps.user',
     'apps.category',
     'apps.product',
+    'apps.order',
+
+    # allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
 
-AUTH_USER_MODEL = 'account.User'
+SITE_ID = 1
+
+AUTH_USER_MODEL = 'user.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -59,6 +70,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',
+
 ]
 
 ROOT_URLCONF = 'mysite.urls'
@@ -86,6 +107,10 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'apps.renderers.ApiRenderer',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
 
@@ -210,3 +235,15 @@ IMAGE_ROOT = ''
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True
+
+# newebpay 金流
+NEWEBPAY_ID = os.environ.get('NEWEBPAY_ID', 'ID')
+NEWEBPAY_HASHKEY = os.environ.get('NEWEBPAY_HASHKEY', 'HASHKEY')
+NEWEBPAY_HASHIV = os.environ.get('NEWEBPAY_HASHIV', 'HASHIV')
+
+# JWT Token
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+}

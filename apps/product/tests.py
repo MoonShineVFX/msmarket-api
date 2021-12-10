@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
 from .models import Product, Model, Renderer, Format
-from ..account.models import User
+from ..user.models import User
 from ..category.models import Tag
 
 
