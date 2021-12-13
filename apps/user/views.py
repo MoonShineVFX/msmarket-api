@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
-from .models import User
+from .models import User, Customer
 from . import serializers
 
 
