@@ -12,6 +12,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Deploy to Cloud Run
         env:
+          CI: false
           PROJECT_ID: ms-model-lib
           REGION: asia-east1
           DATABASE_INSTANCE: model-sql
