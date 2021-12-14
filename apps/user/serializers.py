@@ -5,7 +5,7 @@ from rest_framework import serializers
 from .models import User
 
 
-class RegisterSerializer(serializers.Serializer):
+class RegisterCustomerSerializer(serializers.Serializer):
     realName = serializers.CharField(required=False)
     nickName = serializers.CharField()
     email = serializers.EmailField()
@@ -17,7 +17,7 @@ class RegisterSerializer(serializers.Serializer):
         email = validated_data.pop('email')
         password = validated_data.pop('password')
 
-        user = User.objects.create(name=name, nick_name=nick_name, email=email)
+        user = User.objects.create(name=name, nick_name=nick_name, email=email, is_customer=True)
         user.set_password(raw_password=password)
         user.save()
         return user

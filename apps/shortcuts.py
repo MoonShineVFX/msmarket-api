@@ -9,7 +9,7 @@ from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection, reset_queries
 
-from rest_framework.generics import GenericAPIView, CreateAPIView
+from rest_framework.generics import GenericAPIView, CreateAPIView, DestroyAPIView
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.response import Response
@@ -88,6 +88,24 @@ class PostUpdateView(GenericAPIView, mixins.UpdateModelMixin):
 
     def perform_update(self, serializer):
         serializer.save(**{"updater_id": self.request.user.id, "updated_at": timezone.now()})
+
+    def get_object(self):
+        return get_object_or_404(self.queryset, id=self.request.data.get('id', None))
+
+
+class PostDestroyView(DestroyAPIView):
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_200_OK)
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except Exception:
+            pass
 
     def get_object(self):
         return get_object_or_404(self.queryset, id=self.request.data.get('id', None))

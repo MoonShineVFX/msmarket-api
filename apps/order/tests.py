@@ -1,11 +1,12 @@
 import json
+from collections import OrderedDict
 from django.utils import timezone
 from decimal import Decimal
 from django.test import TestCase
 from rest_framework.test import APIClient
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
-from .models import Order
+from .models import Order, Cart
 from ..product.models import Product
 from ..user.models import User
 
@@ -64,3 +65,122 @@ class OrderTest(TestCase):
         print(response.data)
         assert response.status_code == 200
 
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_cart_products_without_login(self):
+        url = '/api/cart_products'
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_cart_products_with_login(self):
+        Cart.objects.create(user_id=1, product_id=1)
+        Cart.objects.create(user_id=1, product_id=2)
+
+        url = '/api/cart_products'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        assert response.data == {
+            'list': [OrderedDict([('id', 1), ('title', 'product01'), ('imgUrl', None), ('price', Decimal('1.0000'))]),
+                     OrderedDict([('id', 2), ('title', 'product02'), ('imgUrl', None), ('price', Decimal('1.0000'))])],
+            'amount': Decimal('2.0000')}
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_add_with_login(self):
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 1
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 201
+        assert Cart.objects.filter(user=self.user, product_id=1).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_add_exist_product_with_login(self):
+        Cart.objects.create(user_id=1, product_id=1)
+
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 1
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 201
+        assert Cart.objects.filter(user=self.user, product_id=1).exists()
+        assert Cart.objects.filter(user=self.user, product_id=1).count() == 1
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_add_without_login(self):
+        session = self.client.session
+
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 1
+        }
+        response = self.client.post(url, data=data, format="json")
+
+        print(response.data)
+        assert response.status_code == 201
+        assert Cart.objects.filter(product_id=1, session_key=session.session_key).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_add_exist_product_without_login(self):
+        session = self.client.session
+        Cart.objects.create(session_key=session.session_key, product_id=1)
+
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 1
+        }
+        response = self.client.post(url, data=data, format="json")
+
+        assert response.status_code == 201
+        assert Cart.objects.filter(product_id=1, session_key=session.session_key).exists()
+        assert Cart.objects.filter(product_id=1, session_key=session.session_key).count() == 1
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_merge_after_login(self):
+        session = self.client.session
+        Cart.objects.create(session_key=session.session_key, product_id=1)
+
+        url = '/api/login'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        assert Cart.objects.filter(product_id=1, session_key=session.session_key, user=self.user).exists()
+
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 2
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+
+        assert response.status_code == 201
+        assert Cart.objects.filter(product_id=2, user=self.user).exists()
+        assert Cart.objects.filter(user=self.user).count() == 2
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_remove_with_login(self):
+        Cart.objects.create(id=1, user_id=1, product_id=1)
+
+        url = '/api/cart_product_remove'
+        data = {
+            "productId": 1
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        assert not Cart.objects.filter(user=self.user, product_id=1).exists()

@@ -2,14 +2,16 @@ from django.utils import timezone
 import json
 
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView, CreateAPIView
+from ..shortcuts import PostDestroyView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Order, NewebpayPayment
+from .models import Cart, Order, NewebpayPayment
 from ..product.models import Product
-
+from . import serializers
 
 import base64, re
 import hashlib
@@ -121,3 +123,51 @@ class OrderCreate(APIView):
             "Version": "1.6",
         }
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
+
+
+class CartProductList(ListAPIView):
+    serializer_class = serializers.CartProductListSerializer
+
+    def post(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = {
+            "list": serializer.data,
+            "amount": sum(item["price"] for item in serializer.data)
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Cart.objects.select_related("product").filter(user=self.request.user)
+        else:
+            if not self.request.session.session_key:
+                self.request.session.save()
+            session_key = self.request.session.session_key
+            return Cart.objects.select_related("product").filter(session_key=session_key)
+
+
+class CartProductAdd(CreateAPIView):
+    serializer_class = serializers.CartAddSerializer
+
+    def perform_create(self, serializer):
+        product_id = serializer.validated_data['product_id']
+        if self.request.user.is_authenticated:
+            if not Cart.objects.filter(product_id=product_id, user=self.request.user).exists():
+                return serializer.save(user=self.request.user)
+        else:
+            if not self.request.session.session_key:
+                self.request.session.save()
+            session_key = self.request.session.session_key
+            if not Cart.objects.filter(product_id=product_id, session_key=session_key).exists():
+                return serializer.save(session_key=session_key)
+
+
+class CartProductRemove(PostDestroyView):
+    def get_object(self):
+        return get_object_or_404(Cart, product_id=self.request.data.get('productId', None), user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_200_OK)

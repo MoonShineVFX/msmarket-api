@@ -7,6 +7,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=50, null=True)
     nick_name = models.CharField(max_length=50, null=True)
+
+    is_customer = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False, blank=True)
     is_active = models.BooleanField(default=True, blank=True)
 
@@ -48,16 +50,14 @@ class EditorBaseModel(models.Model):
     objects = models.Manager()
 
 
-class Customer(AbstractBaseUser):
-    email = models.EmailField(unique=True)
-    name = models.CharField(max_length=50, null=True)
-
-    is_deleted = models.BooleanField(default=False, blank=True)
-    is_active = models.BooleanField(default=True, blank=True)
-
+class CreatorBaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    last_login = models.DateTimeField(null=True, blank=True)
+    creator = models.ForeignKey(
+        User,
+        related_name="%(app_label)s_%(class)s",
+        on_delete=models.CASCADE)
 
-    objects = UserManager()
+    class Meta:
+        abstract = True
 
-    USERNAME_FIELD = 'email'
+    objects = models.Manager()

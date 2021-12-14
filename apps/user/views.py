@@ -11,13 +11,14 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
-from .models import User, Customer
+from .models import User
+from ..order.models import Cart
 from . import serializers
 
 
 class RegisterView(APIView):
     def post(self, request):
-        serializer = serializers.RegisterSerializer(data=request.data)
+        serializer = serializers.RegisterCustomerSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_200_OK)
@@ -35,9 +36,25 @@ class ObtainTokenView(APIView):
         user = request.user
         refresh = RefreshToken.for_user(user)
         token = str(refresh.access_token)
+        self.merge_cart()
         response = Response({"token": token}, status=status.HTTP_200_OK)
         response.set_cookie(key="token", value=token, httponly=False, max_age=60*60, secure=False, samesite="Strict")
         return response
+
+    def merge_cart(self):
+        """
+        當初次登入時合併訪客購物車
+        """
+        if "token" not in self.request.COOKIES and self.request.session.session_key:
+            Cart.objects.filter(session_key=self.request.session.session_key).update(user=self.request.user)
+
+
+class GuestLogin(APIView):
+    def post(self, request):
+        serializer = serializers.RegisterCustomerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(status=status.HTTP_200_OK)
 
 
 class ForgetPasswordView(APIView):
