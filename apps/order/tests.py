@@ -1,12 +1,12 @@
 import json
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from django.utils import timezone
 from decimal import Decimal
 from django.test import TestCase
 from rest_framework.test import APIClient
-from django.test.utils import override_settings
+from django.test.utils import override_settings, settings
 from ..shortcuts import debugger_queries
-from .models import Order, Cart
+from .models import Order, Cart, NewebpayResponse
 from ..product.models import Product
 from ..user.models import User
 
@@ -24,6 +24,7 @@ class OrderTest(TestCase):
         p2 = Product.objects.create(id=2, title="product02", preview="", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, status=0, creator_id=1)
 
+    @override_settings(DEBUG=True)
     def test_encrypt_with_AES_and_SHA(self):
         trade_info = {
             # 這些是藍新在傳送參數時的必填欄位
@@ -55,15 +56,39 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_web_order_create(self):
-        url = '/api/web_order_create'
+    def test_order_create(self):
+        Cart.objects.create(user_id=1, product_id=1)
+        Cart.objects.create(user_id=1, product_id=2)
+
+        url = '/api/order_create'
         data = {
-            "productIds": [1, 2]
+            "cartIds": [1, 2]
         }
         self.client.force_authenticate(user=self.user)
-        response = self.client.post(url)
+        response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
+        order = Order.objects.filter(user=self.user).last()
+        assert order.amount == Decimal("2.000")
+
+        order_product_ids = [product.id for product in order.products.all()]
+        self.assertEqual(Counter(order_product_ids), Counter([1, 2]))
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_newebpay_payment_notify(self):
+        url = '/api/newebpay_payment_notify'
+        data = {
+            "Status": "SUCCESS",
+            "MerchantID": "MerchantID",
+            "TradeInfo": "TradeInfo",
+            "TradeSha": "TradeSha",
+            "Version": "1.6"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 201
+        assert NewebpayResponse.objects.filter(MerchantID="MerchantID").exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -83,8 +108,8 @@ class OrderTest(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url)
         assert response.data == {
-            'list': [OrderedDict([('id', 1), ('title', 'product01'), ('imgUrl', None), ('price', Decimal('1.0000'))]),
-                     OrderedDict([('id', 2), ('title', 'product02'), ('imgUrl', None), ('price', Decimal('1.0000'))])],
+            'list': [OrderedDict([('id', 1), ('productId', 1), ('title', 'product01'), ('imgUrl', None), ('price', Decimal('1.0000'))]),
+                     OrderedDict([('id', 2), ('productId', 2), ('title', 'product02'), ('imgUrl', None), ('price', Decimal('1.0000'))])],
             'amount': Decimal('2.0000')}
         assert response.status_code == 200
 

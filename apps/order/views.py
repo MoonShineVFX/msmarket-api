@@ -31,8 +31,9 @@ hash_iv = settings.NEWEBPAY_HASHIV
 
 
 class AESCipher:
-    def __init__(self, key=settings.NEWEBPAY_HASHKEY, blk_sz=32):
+    def __init__(self, key=hash_key, iv=hash_iv, blk_sz=32):
         self.key = key
+        self.iv = iv
         self.blk_sz = blk_sz
 
     def encrypt(self, raw):
@@ -43,7 +44,7 @@ class AESCipher:
         raw = raw.encode('utf8mb4')
         # Initialization vector to avoid same encrypt for same strings.
 
-        cipher = AES.new(self.key.encode('utf8mb4'), AES.MODE_CBC, hash_iv.encode('utf8mb4'))
+        cipher = AES.new(self.key.encode('utf8mb4'), AES.MODE_CBC, self.iv.encode('utf8mb4'))
         return base64.b64encode(cipher.encrypt(raw)).decode('utf8mb4')
 
     def decrypt(self, enc):
@@ -52,7 +53,7 @@ class AESCipher:
             raise NameError("No value given to decrypt")
         enc = base64.b64decode(enc)
         # AES.MODE_CFB that allows bigger length or latin values
-        cipher = AES.new(self.key.encode('utf8mb4'), AES.MODE_CBC, hash_iv.encode('utf8mb4'))
+        cipher = AES.new(self.key.encode('utf8mb4'), AES.MODE_CBC, self.iv.encode('utf8mb4'))
         return re.sub(b'\x00*$', b'', cipher.decrypt(enc)).decode('utf8mb4')
 
 
@@ -80,7 +81,7 @@ class OrderCreate(APIView):
             "Amt": order.amount,  # 訂單金額
             "Version": "1.6",
             "ItemDesc": "第一次串接就成功！",
-            "Email": order.creator.email,
+            "Email": order.user.email,
             "LoginType": 0,
             # --------------------------
             # 將要選擇的付款服務加上參數，目前僅接受信用卡一次付清、ATM轉帳
@@ -95,8 +96,11 @@ class OrderCreate(APIView):
 
     def post(self, request, *args, **kwargs):
         today = timezone.now().date()
-        ids = self.request.data.get('productIds', [])
-        products = Product.objects.filter(id__in=ids)
+        cart_ids = self.request.data.get('cartIds', [])
+        carts = Cart.objects.select_related("product").filter(id__in=cart_ids, user=request.user)
+
+        products = [cart.product for cart in carts]
+        sum_price = sum([cart.product.price for cart in carts])
 
         # 取得流水號 "MerchantOrderNo" ex: MSM20211201000001
         last_order = Order.objects.filter(created_at__date=today).last()
@@ -107,10 +111,12 @@ class OrderCreate(APIView):
             today_str = timezone.now().strftime("%Y%m%d")
             merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
 
-        sum_price = sum([product.price for product in products])
         order = Order.objects.create(
-            creator=request.user, merchant_order_no=merchant_order_no, amount=sum_price)
+            user=request.user, merchant_order_no=merchant_order_no, amount=sum_price)
         order.products.set(products)
+
+        # 清除購物車已下單商品
+        Cart.objects.filter(id__in=cart_ids, user=request.user).delete()
 
         trade_info = self.get_trade_info_query_string(order=order)
         encrypted_trade_info = AESCipher().encrypt(raw=trade_info)
@@ -123,6 +129,10 @@ class OrderCreate(APIView):
             "Version": "1.6",
         }
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
+
+
+class NewebpayPaymentNotify(CreateAPIView):
+    serializer_class = serializers.NewebpayResponseSerializer
 
 
 class CartProductList(ListAPIView):

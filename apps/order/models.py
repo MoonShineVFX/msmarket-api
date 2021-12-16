@@ -30,6 +30,14 @@ class Order(models.Model):
     objects = models.Manager()
 
 
+class NewebpayResponse(models.Model):
+    Status = models.CharField(max_length=10)
+    MerchantID = models.CharField(max_length=20)
+    TradeInfo = models.TextField()
+    TradeSha = models.TextField()
+    Version = models.CharField(max_length=5)
+
+
 class NewebpayPayment(models.Model):
     order = models.ForeignKey(Order, on_delete=models.PROTECT)
 
@@ -42,7 +50,5 @@ class NewebpayPayment(models.Model):
     pay_time = models.DateTimeField()
     ip = models.CharField(max_length=15)
     EscrowBank = models.CharField(max_length=10, null=True, blank=True)
-
-    json = models.TextField()
 
     objects = models.Manager()
