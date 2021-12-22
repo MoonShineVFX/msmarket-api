@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.category',
     'apps.product',
     'apps.order',
+    'apps.index',
 
     # allauth
     'allauth',
@@ -240,6 +241,11 @@ CORS_ORIGIN_ALLOW_ALL = True
 NEWEBPAY_ID = os.environ.get('NEWEBPAY_ID', 'ID')
 NEWEBPAY_HASHKEY = os.environ.get('NEWEBPAY_HASHKEY', "12345678912345678912345678912345")
 NEWEBPAY_HASHIV = os.environ.get('NEWEBPAY_HASHIV', "1234567891234567")
+
+# ezpay
+EZPAY_ID = os.environ.get('EZPAY_ID', 'ID')
+EZPAY_HASHKEY = os.environ.get('EZPAY_HASHKEY', "12345678912345678912345678912345")
+EZPAY_HASHIV = os.environ.get('EZPAY_HASHIV', "1234567891234567")
 
 # JWT Token
 SIMPLE_JWT = {
