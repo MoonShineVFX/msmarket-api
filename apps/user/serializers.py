@@ -7,13 +7,13 @@ from .models import User
 
 class RegisterCustomerSerializer(serializers.Serializer):
     realName = serializers.CharField(required=False)
-    nickName = serializers.CharField()
+    nickname = serializers.CharField()
     email = serializers.EmailField()
     password = serializers.CharField()
 
     def create(self, validated_data):
         name = validated_data.pop('realName', None)
-        nick_name = validated_data.pop('nickName')
+        nick_name = validated_data.pop('nickname')
         email = validated_data.pop('email')
         password = validated_data.pop('password')
 

@@ -17,7 +17,7 @@ class UserTest(TestCase):
         url = '/api/register'
         data = {
             "realName": "realName",
-            "nickName": "nickName",
+            "nickname": "nickName",
             "email": "test@mail.com",
             "password": "password"
         }

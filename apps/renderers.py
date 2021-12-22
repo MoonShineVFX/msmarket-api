@@ -15,7 +15,7 @@ class ApiRenderer(JSONRenderer):
         if not status.is_success(status_code):
             response_dict['result'] = 0
             response_dict['message'] = "errors"
-            response_dict['errors'] = data.get('data')
+            response_dict['errors'] = data
         else:
             response_dict['data'] = data
         return super(ApiRenderer, self).render(response_dict, accepted_media_type, renderer_context)
