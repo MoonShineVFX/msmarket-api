@@ -197,6 +197,27 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_register_merge_cart(self):
+        session = self.client.session
+        Cart.objects.create(session_key=session.session_key, product_id=1)
+
+        url = '/api/register'
+        data = {
+            "realName": "realName",
+            "nickname": "nickName",
+            "email": "test@mail.com",
+            "password": "password"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com",
+                                   is_customer=True).first()
+        assert user is not None
+        assert Cart.objects.filter(product_id=1, session_key=session.session_key, user=user).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_cart_product_remove_with_login(self):
         Cart.objects.create(id=1, user_id=1, product_id=1)
 
@@ -209,3 +230,14 @@ class OrderTest(TestCase):
         print(response.data)
         assert response.status_code == 200
         assert not Cart.objects.filter(user=self.user, product_id=1).exists()
+
+    @debugger_queries
+    def test_test_ezpay(self):
+        Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001", amount=1000, paid_by="")
+        url = '/api/test_ezpay'
+        data = {
+            "order_id": 1
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
