@@ -10,7 +10,7 @@ from .models import Order, Cart, NewebpayResponse
 from ..product.models import Product
 from ..user.models import User
 
-from .views import encrypt_with_SHA256, AESCipher
+from .views import encrypt_with_SHA256, AESCipher, TestEZPay
 from urllib.parse import urlencode
 
 
@@ -232,6 +232,12 @@ class OrderTest(TestCase):
         assert not Cart.objects.filter(user=self.user, product_id=1).exists()
 
     @debugger_queries
+    def test_test_ezpay_get_post_data(self):
+        order = Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001", amount=1000, paid_by="")
+        result = TestEZPay().get_post_data(order)
+        print(result)
+
+    @debugger_queries
     def test_test_ezpay(self):
         Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001", amount=1000, paid_by="")
         url = '/api/test_ezpay'
@@ -241,3 +247,16 @@ class OrderTest(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=data, format="json")
         print(response.data)
+
+    @debugger_queries
+    def test_test_cookie(self):
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 1
+        }
+        response = self.client.post(url, data=data, format="json")
+
+        url = '/api/test_cookie'
+        response = self.client.get(url)
+        print(response.data)
+        assert response.data["sessionid"] is not None

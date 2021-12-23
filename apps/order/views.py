@@ -1,5 +1,7 @@
 from django.utils import timezone
-import json
+import requests
+from decimal import Decimal
+
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView
@@ -181,3 +183,68 @@ class CartProductRemove(PostDestroyView):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_200_OK)
+
+
+class TestEZPay(APIView):
+    permission_classes = (IsAuthenticated, )
+
+    api_url = "https://cinv.pay2go.com/Api/invoice_issue"
+
+    def get_post_data(self, order):
+        if order.products.all() is not None:
+            item_count = ""
+            item_price = ""
+            for p in order.products.all():
+                item_count = item_count + "|1" if item_count == "" else "1"
+
+                price = p.price * Decimal("1.05")
+                item_price = item_price + "|{}".format(price) if item_price == "" else str(price)
+        else:
+            item_count = "1"
+            item_price = order.amount
+
+        post_data = {
+            "RespondType": "JSON",
+            "Version": "1.4",
+            "TimeStamp": timezone.now().timestamp(),
+            "MerchantOrderNo": order.merchant_order_no,
+            "Status": "1",
+            "Category": "B2C",     # B2B, B2C
+            "BuyerName": order.user.name,
+            "PrintFlag": "Y",
+            "TaxType": "1",
+            "TaxRate": 5,
+            "Amt": order.amount,  # 發票銷售額(未稅)
+            "TaxAmt": 0,
+            "TotalAmt": order.amount * Decimal("1.05"),  # 發票總金額(含稅)
+            "ItemName": "夢想模型(共{}筆)".format(item_count),
+            "ItemCount": item_count,
+            "ItemUnit": "組",
+            "ItemPrice": item_price,
+            "ItemAmt": item_price,
+        }
+        return urlencode(post_data)
+
+    def post(self, request, *args, **kwargs):
+        order_id = self.request.data.get('order_id', None)
+        order = get_object_or_404(Order, id=order_id)
+
+        post_data = self.get_post_data(order)
+        aes = AESCipher(key=settings.EZPAY_HASHKEY, iv=settings.EZPAY_HASHIV)
+        encrypted_post_data = aes.encrypt(raw=post_data)
+
+        data = {
+            "MerchantID_": settings.EZPAY_ID,
+            "PostData_": encrypted_post_data
+        }
+        response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
+        print(response.json())
+        return Response(response.json(), status=status.HTTP_200_OK)
+
+
+class TestCookie(APIView):
+    def get(self, request):
+        data = {
+            "sessionid": self.request.session.session_key
+        }
+        return Response(data, status=status.HTTP_200_OK)
