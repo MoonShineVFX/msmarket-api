@@ -57,8 +57,8 @@ class OrderTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_order_create(self):
-        Cart.objects.create(user_id=1, product_id=1)
-        Cart.objects.create(user_id=1, product_id=2)
+        Cart.objects.create(id=1, user_id=1, product_id=1)
+        Cart.objects.create(id=2, user_id=1, product_id=2)
 
         url = '/api/order_create'
         data = {
@@ -73,6 +73,7 @@ class OrderTest(TestCase):
 
         order_product_ids = [product.id for product in order.products.all()]
         self.assertEqual(Counter(order_product_ids), Counter([1, 2]))
+        assert not Cart.objects.filter(id__in=[1, 2], user_id=1).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -233,9 +234,72 @@ class OrderTest(TestCase):
 
     @debugger_queries
     def test_test_ezpay_get_post_data(self):
-        order = Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001", amount=1000, paid_by="")
-        result = TestEZPay().get_post_data(order)
-        print(result)
+        post_data = {
+            'RespondType': 'JSON',
+            'Version': '1.4',
+            'TimeStamp': '1444963784',  # 請以  time()  格式
+            'TransNum': '',
+            'MerchantOrderNo': '201409170000001',
+            'BuyerName': '王大品',
+            'BuyerUBN': '54352706',
+            'BuyerAddress': '台北市南港區南港路二段97號8樓',
+            'BuyerEmail': '54352706@pay2go.com',
+            'Category': 'B2B',
+            'TaxType': '1',
+            'TaxRate': '5',
+            'Amt': '490',
+            'TaxAmt': '10',
+            'TotalAmt': '500',
+            'CarrierType': '',
+            'CarrierNum': '',
+            'LoveCode': '',
+            'PrintFlag': 'Y',
+            'ItemName': '商品一|商品二',  # 多項商品時，以「 | 」分開
+            'ItemCount': '1|2',  # 多項商品時，以「 | 」分開
+            'ItemUnit': '個|個',  # 多項商品時，以「 | 」分開
+            'ItemPrice': '300|100',  # 多項商品時，以「 | 」分開
+            'ItemAmt': '300|200',  # 多項商品時，以「 | 」分開
+            'Comment': '備註',
+            'CreateStatusTime': '',
+            'Status': '1'  # 1 = 立即開立，0 = 待開立，3 = 延遲開立
+        }
+        post_data = urlencode(post_data)
+        print(post_data)
+        expect_urlcode = "RespondType=JSON&Version=1.4&TimeStamp=1444963784&TransNum=" \
+                         "&MerchantOrderNo=201409170000001&BuyerName=%E7%8E%8B%E5%A4%A7%E5%93%81" \
+                         "&BuyerUBN=54352706&BuyerAddress=%E5%8F%B0%E5%8C%97%E5%B8%82" \
+                         "%E5%8D%97%E6%B8%AF%E5%8D%80%E5%8D%97%E6%B8%AF%E8%B7%AF" \
+                         "%E4%BA%8C%E6%AE%B597%E8%99%9F8%E6%A8%93&BuyerEmail=54352706%40pay2go.com" \
+                         "&Category=B2B&TaxType=1&TaxRate=5&Amt=490&TaxAmt=10" \
+                         "&TotalAmt=500&CarrierType=&CarrierNum=&LoveCode=&PrintFlag=Y&ItemName=%" \
+                         "E5%95%86%E5%93%81%E4%B8%80%7C%E5%95%86%E5%93%81%E4%BA%8C" \
+                         "&ItemCount=1%7C2&ItemUnit=%E5%80%8B%7C%E5%80%8B&ItemPrice=300%7C100" \
+                         "&ItemAmt=300%7C200&Comment=%E5%82%99%E8%A8%BB&CreateStatusTime=&Status=1"
+        self.assertEqual(post_data, expect_urlcode)
+
+        aes = AESCipher(key='abcdefghijklmnopqrstuvwxyzabcdef', iv='1234567891234567')
+        encrypted_post_data = aes.encrypt(raw=post_data)
+        expect_encrypted_post_data = "70a61189d7dc0f6abefe7643da144af543470ddf87b1de14ae20cf104f730" \
+                                      "dee3f872d15ec141795895ca901e04b59bd691657557d884265e2c817b8db15b5563c" \
+                                      "846c88d228bec7d4c9aa57b9d3e5e22c73573e1dc4393c0057185920920fcf17438ec9" \
+                                      "4c82de1b109594283c3df21dfc2e3d10a7748d5c9e2f0272e6ff34df191bb517a9736718" \
+                                      "33c52dd4a67b27a166f371488a3adc973f0277020dd528353ae88ae1dda9f88f0474f48" \
+                                      "e452d5a2e68f41e5c8033937dbb72607003610095b7c0717250e4c8c3611f699fceaa6f" \
+                                      "d88a687cc7b3ac5edff3a3a11ac7d040755c7f8c1725011645ea139ceb355e309b4bee9" \
+                                      "5a8c37cf9b2f2027b1b7943bc5a946f5879416b2ddf45dd2f4163fe3d995bd189f3053a3" \
+                                      "91463565d3f1e284056c21d031554f7d28ed2d674ff62c24b0e93943e20ddd6bf79e6d5" \
+                                      "19fc03c590a70f40b2d559ced5a8cd0c1de0d4154112c2fe881c2f352369c23ef2a68cd" \
+                                      "eacea72d38c4349484793a93dbbf66078ac533a868cb7378c61c47b79a6c756a3aa484" \
+                                      "5006f97bb97ab43a43e17d512c65d2681ed5dd00ef4e0fe76c50f4c093452ee32bc34da" \
+                                      "df31cb1d3c562d8d2149506aaa4f2d764ea8e189635aa61863155bec033a5fbeba58a4" \
+                                      "63f1f3fc29184fbb85012f339fb57fe96a513ea64cb5b96b7989a2ede6a6a9c164bd1706" \
+                                      "52f433688b435e8dcf5246890f2fb9a38fbfe67ed92150d939a690cacb5f3618a7e1234b" \
+                                      "efad329e69e56da113cc2889e8ecc2bee9cd4c31eeb44f35817f4b2580510cf6b24189d" \
+                                      "f119f07f8f6940e5cd24c23d3bc350975a20a51cd8e8a26254cb25a805929b84bc1bf16" \
+                                      "143ed4fb6c3875607ba7089889e24ab662469997cec4cb7f6cd1502eded8cd9ab50380" \
+                                      "305b71e1fa57c4".encode("utf-8")
+
+        self.assertEqual(encrypted_post_data, expect_encrypted_post_data)
 
     @debugger_queries
     def test_test_ezpay(self):

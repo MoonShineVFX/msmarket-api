@@ -8,7 +8,7 @@ from rest_framework.generics import ListAPIView, CreateAPIView
 from ..shortcuts import PostDestroyView
 from rest_framework.response import Response
 from rest_framework import status
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Cart, Order, NewebpayPayment
@@ -18,9 +18,10 @@ from . import serializers
 import base64, re
 import hashlib
 import codecs
+from hashlib import md5
 from django.conf import settings
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
+from Crypto.Util.Padding import pad, unpad
 from urllib.parse import urlencode
 
 
@@ -31,23 +32,20 @@ codecs.register(lambda name: codecs.lookup('utf8') if name == 'utf8mb4' else Non
 hash_key = settings.NEWEBPAY_HASHKEY
 hash_iv = settings.NEWEBPAY_HASHIV
 
+from binascii import hexlify, unhexlify
+
 
 class AESCipher:
-    def __init__(self, key=hash_key, iv=hash_iv, blk_sz=32):
-        self.key = key
-        self.iv = iv
-        self.blk_sz = blk_sz
+    def __init__(self, key=hash_key, iv=hash_iv, block_size=32):
+        self.key = key.encode('utf8mb4')
+        self.iv = iv.encode('utf8mb4')
+        self.block_size = block_size
 
     def encrypt(self, raw):
-        # raw is the main value
-        if raw is None or len(raw) == 0:
-            raise NameError("No value given to encrypt")
-        raw = raw + '\0' * (self.blk_sz - len(raw) % self.blk_sz)
         raw = raw.encode('utf8mb4')
-        # Initialization vector to avoid same encrypt for same strings.
-
-        cipher = AES.new(self.key.encode('utf8mb4'), AES.MODE_CBC, self.iv.encode('utf8mb4'))
-        return base64.b64encode(cipher.encrypt(raw)).decode('utf8mb4')
+        encryption_cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        encrypted_text = encryption_cipher.encrypt(pad(raw, AES.block_size))
+        return hexlify(encrypted_text)
 
     def decrypt(self, enc):
         # enc is the encrypted value
@@ -99,7 +97,7 @@ class OrderCreate(APIView):
     def post(self, request, *args, **kwargs):
         today = timezone.now().date()
         cart_ids = self.request.data.get('cartIds', [])
-        carts = Cart.objects.select_related("product").filter(id__in=cart_ids, user=request.user)
+        carts = get_list_or_404(Cart.objects.select_related("product"), id__in=cart_ids, user=request.user)
 
         products = [cart.product for cart in carts]
         sum_price = sum([cart.product.price for cart in carts])
@@ -191,7 +189,7 @@ class TestEZPay(APIView):
     api_url = "https://cinv.pay2go.com/Api/invoice_issue"
 
     def get_post_data(self, order):
-        if order.products.all() is not None:
+        if len(order.products.all()) > 0:
             item_count = ""
             item_price = ""
             for p in order.products.all():
@@ -201,12 +199,15 @@ class TestEZPay(APIView):
                 item_price = item_price + "|{}".format(price) if item_price == "" else str(price)
         else:
             item_count = "1"
-            item_price = order.amount
+            item_price = int(order.amount)
+
+        tax_rate = Decimal("0.05")
+        tax_amt = order.amount * tax_rate
 
         post_data = {
             "RespondType": "JSON",
             "Version": "1.4",
-            "TimeStamp": timezone.now().timestamp(),
+            "TimeStamp": int(timezone.now().timestamp()),
             "MerchantOrderNo": order.merchant_order_no,
             "Status": "1",
             "Category": "B2C",     # B2B, B2C
@@ -214,15 +215,16 @@ class TestEZPay(APIView):
             "PrintFlag": "Y",
             "TaxType": "1",
             "TaxRate": 5,
-            "Amt": order.amount,  # 發票銷售額(未稅)
-            "TaxAmt": 0,
-            "TotalAmt": order.amount * Decimal("1.05"),  # 發票總金額(含稅)
+            "Amt": int(order.amount),  # 發票銷售額(未稅)
+            "TaxAmt": int(tax_amt),
+            "TotalAmt": int(order.amount + tax_amt),  # 發票總金額(含稅)
             "ItemName": "夢想模型(共{}筆)".format(item_count),
             "ItemCount": item_count,
             "ItemUnit": "組",
             "ItemPrice": item_price,
             "ItemAmt": item_price,
         }
+        print(post_data)
         return urlencode(post_data)
 
     def post(self, request, *args, **kwargs):
@@ -238,7 +240,7 @@ class TestEZPay(APIView):
             "PostData_": encrypted_post_data
         }
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
-        print(response.json())
+
         return Response(response.json(), status=status.HTTP_200_OK)
 
 
