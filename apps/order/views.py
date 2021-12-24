@@ -105,7 +105,7 @@ class OrderCreate(APIView):
         # 取得流水號 "MerchantOrderNo" ex: MSM20211201000001
         last_order = Order.objects.filter(created_at__date=today).last()
         if last_order:
-            serial_number = last_order.merchant_order_no[3:]
+            serial_number = int(last_order.merchant_order_no[3:])
             merchant_order_no = "{}{}".format("MSM", serial_number + 1)
         else:
             today_str = timezone.now().strftime("%Y%m%d")

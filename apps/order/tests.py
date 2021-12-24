@@ -57,6 +57,10 @@ class OrderTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_order_create(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"))
+
         Cart.objects.create(id=1, user_id=1, product_id=1)
         Cart.objects.create(id=2, user_id=1, product_id=2)
 
@@ -70,6 +74,7 @@ class OrderTest(TestCase):
         assert response.status_code == 200
         order = Order.objects.filter(user=self.user).last()
         assert order.amount == Decimal("2.000")
+        assert int(order.merchant_order_no[3:]) == int(merchant_order_no[3:]) + 1
 
         order_product_ids = [product.id for product in order.products.all()]
         self.assertEqual(Counter(order_product_ids), Counter([1, 2]))
