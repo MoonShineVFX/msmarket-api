@@ -58,12 +58,17 @@ class AESCipher:
 
 
 def encrypt_with_SHA256(data=None):
+    result = hashlib.sha256(data.encode('utf8mb4')).hexdigest()
+    result = result.upper()
+    return result
+
+
+def add_keyIV_and_encrypt_with_SHA256(data=None):
     # AES 加密字串前後加上商店專屬加密 HashKey 與商店專屬加密 HashIV
-    encrypted_data = "HashKey=%s&%s&HashIV=%s" % (hash_key, data, hash_iv)
+    data = "HashKey=%s&%s&HashIV=%s" % (hash_key, data, hash_iv)
 
     # 將串聯後的字串用 SHA256 壓碼後轉大寫
-    result = hashlib.sha256(encrypted_data.encode('utf8mb4')).hexdigest()
-    result = result.upper()
+    result = encrypt_with_SHA256(data)
 
     return result
 
@@ -112,7 +117,7 @@ class OrderCreate(APIView):
             merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
 
         order = Order.objects.create(
-            user=request.user, merchant_order_no=merchant_order_no, amount=sum_price)
+            user=request.user, merchant_order_no=merchant_order_no, amount=sum_price, item_count=len(products))
         order.products.set(products)
 
         # 清除購物車已下單商品
@@ -120,7 +125,7 @@ class OrderCreate(APIView):
 
         trade_info = self.get_trade_info_query_string(order=order)
         encrypted_trade_info = AESCipher().encrypt(raw=trade_info)
-        trade_sha = encrypt_with_SHA256(data=encrypted_trade_info)
+        trade_sha = add_keyIV_and_encrypt_with_SHA256(data=encrypted_trade_info)
 
         payment_request_data = {
             "MerchantID": settings.NEWEBPAY_ID,
@@ -129,6 +134,17 @@ class OrderCreate(APIView):
             "Version": "1.6",
         }
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
+
+
+class OrderList(ListAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = serializers.OrderSerializer
+
+    def post(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return Order.objects.prefetch_related("invoice").filter(user=self.request.user)
 
 
 class NewebpayPaymentNotify(CreateAPIView):

@@ -10,7 +10,7 @@ from .models import Order, Cart, NewebpayResponse
 from ..product.models import Product
 from ..user.models import User
 
-from .views import encrypt_with_SHA256, AESCipher, TestEZPay
+from .views import add_keyIV_and_encrypt_with_SHA256, AESCipher, encrypt_with_SHA256
 from urllib.parse import urlencode
 
 
@@ -51,8 +51,15 @@ class OrderTest(TestCase):
         result = c.encrypt(raw=trade_info)
         print(result)
 
-        result = encrypt_with_SHA256(result)
+        result = add_keyIV_and_encrypt_with_SHA256(result)
         print(result)
+
+    @override_settings(DEBUG=True)
+    def test_SHA256(self):
+        data = "HashKey=12345678901234567890123456789012&ff91c8aa01379e4de621a44e5f11f72e4d25bdb1a18242db6cef9ef07d80b0165e476fd1d9acaa53170272c82d122961e1a0700a7427cfa1cf90db7f6d6593bbc93102a4d4b9b66d9974c13c31a7ab4bba1d4e0790f0cbbbd7ad64c6d3c8012a601ceaa808bff70f94a8efa5a4f984b9d41304ffd879612177c622f75f4214fa&HashIV=1234567890123456"
+        result = encrypt_with_SHA256(data)
+        print(result)
+        assert result == "EA0A6CC37F40C1EA5692E7CBB8AE097653DF3E91365E6A9CD7E91312413C7BB8"
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -79,6 +86,22 @@ class OrderTest(TestCase):
         order_product_ids = [product.id for product in order.products.all()]
         self.assertEqual(Counter(order_product_ids), Counter([1, 2]))
         assert not Cart.objects.filter(id__in=[1, 2], user_id=1).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_order_list(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 2)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("100"), status=2)
+
+        url = '/api/orders'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        assert response.status_code == 200
+        print(response.data)
 
     @override_settings(DEBUG=True)
     @debugger_queries

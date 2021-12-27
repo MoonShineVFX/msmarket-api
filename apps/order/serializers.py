@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from rest_framework import serializers
-from .models import Cart, NewebpayResponse
-from ..product.models import Product
-from ..user.models import User
+from .models import Order, Cart, NewebpayResponse
 
 
 class CartProductListSerializer(serializers.ModelSerializer):
@@ -39,3 +37,29 @@ class NewebpayResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = NewebpayResponse
         fields = '__all__'
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    orderNumber = serializers.CharField(source="merchant_order_no")
+    price = serializers.IntegerField(source="amount")
+    totalItems = serializers.IntegerField(source="item_count")
+    createdAt = serializers.DateTimeField(source="created_at")
+    paidAt = serializers.DateTimeField(source="paid_at")
+    paidBy = serializers.CharField(source="paid_by")
+
+    invoice = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ('id', 'orderNumber', 'price', 'status', 'totalItems', 'invoice',
+                  'createdAt', 'paidAt', 'paidBy')
+
+    def get_invoice(self, instance):
+        try:
+            return instance.invoice.invoice_number
+        except ObjectDoesNotExist:
+            return None
+
+    def get_status(self, instance):
+        return Order.STATUS[instance.status]

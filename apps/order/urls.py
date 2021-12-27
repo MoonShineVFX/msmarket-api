@@ -3,6 +3,8 @@ from . import views
 
 urlpatterns = [
     url(r'^order_create$', views.OrderCreate.as_view(), name='order_create'),
+    url(r'^orders$', views.OrderList.as_view(), name='order_list'),
+
     url(r'^newebpay_payment_notify$', views.NewebpayPaymentNotify.as_view(), name='newebpay-payment-notify'),
 
     url(r'^cart_products$', views.CartProductList.as_view(), name='cart_product_list'),
