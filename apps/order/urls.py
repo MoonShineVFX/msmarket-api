@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     url(r'^order_create$', views.OrderCreate.as_view(), name='order_create'),
     url(r'^orders$', views.OrderList.as_view(), name='order_list'),
+    url(r'^orders/(?P<order_number>[0-9A-Za-z\-]+)$', views.OrderDetail.as_view(), name='order_detail'),
 
     url(r'^newebpay_payment_notify$', views.NewebpayPaymentNotify.as_view(), name='newebpay-payment-notify'),
 

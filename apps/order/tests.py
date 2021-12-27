@@ -128,6 +128,20 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_order_detail(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+        order.products.set([1, 2])
+
+        url = '/api/orders/{}'.format(merchant_order_no)
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        assert response.status_code == 200
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_newebpay_payment_notify(self):
         url = '/api/newebpay_payment_notify'
         data = {

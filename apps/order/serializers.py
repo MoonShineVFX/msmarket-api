@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from rest_framework import serializers
 from .models import Order, Cart, NewebpayResponse
+from ..product.serializers import OrderProductSerializer
 
 
 class CartProductListSerializer(serializers.ModelSerializer):
@@ -63,3 +64,12 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_status(self, instance):
         return Order.STATUS[instance.status]
+
+
+class OrderDetailSerializer(OrderSerializer):
+    products = OrderProductSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ('id', 'orderNumber', 'price', 'status', 'totalItems', 'invoice',
+                  'createdAt', 'paidAt', 'paidBy', 'products')

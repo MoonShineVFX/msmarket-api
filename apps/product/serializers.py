@@ -40,6 +40,12 @@ class WebProductListSerializer(serializers.ModelSerializer):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.preview) if instance.preview else None
 
 
+class OrderProductSerializer(WebProductListSerializer):
+    class Meta:
+        model = Product
+        fields = ('id', 'title', 'imgUrl', 'price')
+
+
 class WebProductDetailSerializer(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField()
     modelSum = serializers.IntegerField(source="model_count")

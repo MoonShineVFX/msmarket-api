@@ -131,7 +131,6 @@ class OrderCreate(APIView):
             "TradeInfo": encrypted_trade_info,
             "TradeSha": trade_sha,  # TradeInfo 經 AES 加密後再 SHA256 加密,
             "Version": "1.6",
-            "trade_info": trade_info
         }
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
 
@@ -150,6 +149,15 @@ class OrderList(GenericAPIView):
 
     def get_queryset(self):
         return Order.objects.prefetch_related("invoice").filter(user=self.request.user)
+
+
+class OrderDetail(APIView):
+    permission_classes = (IsAuthenticated, )
+
+    def get(self, request, order_number, *args, **kwargs):
+        order = get_object_or_404(Order.objects.prefetch_related("invoice", "products"), merchant_order_no=order_number)
+        serializer = serializers.OrderDetailSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class NewebpayPaymentNotify(CreateAPIView):
