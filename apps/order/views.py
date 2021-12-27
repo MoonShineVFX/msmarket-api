@@ -4,7 +4,7 @@ from decimal import Decimal
 
 
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, CreateAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, GenericAPIView
 from ..shortcuts import PostDestroyView
 from rest_framework.response import Response
 from rest_framework import status
@@ -65,8 +65,7 @@ def encrypt_with_SHA256(data=None):
 
 def add_keyIV_and_encrypt_with_SHA256(data=None):
     # AES 加密字串前後加上商店專屬加密 HashKey 與商店專屬加密 HashIV
-    data = "HashKey=%s&%s&HashIV=%s" % (hash_key, data, hash_iv)
-
+    data = "HashKey=%s&%s&HashIV=%s" % (hash_key, data.decode("utf-8"), hash_iv)
     # 將串聯後的字串用 SHA256 壓碼後轉大寫
     result = encrypt_with_SHA256(data)
 
@@ -136,12 +135,17 @@ class OrderCreate(APIView):
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
 
 
-class OrderList(ListAPIView):
+class OrderList(GenericAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.OrderSerializer
 
     def post(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = {
+            "list": serializer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
     def get_queryset(self):
         return Order.objects.prefetch_related("invoice").filter(user=self.request.user)
@@ -151,7 +155,7 @@ class NewebpayPaymentNotify(CreateAPIView):
     serializer_class = serializers.NewebpayResponseSerializer
 
 
-class CartProductList(ListAPIView):
+class CartProductList(GenericAPIView):
     serializer_class = serializers.CartProductListSerializer
 
     def post(self, request, *args, **kwargs):
@@ -240,7 +244,6 @@ class TestEZPay(APIView):
             "ItemPrice": item_price,
             "ItemAmt": item_price,
         }
-        print(post_data)
         return urlencode(post_data)
 
     def post(self, request, *args, **kwargs):
