@@ -131,6 +131,7 @@ class OrderCreate(APIView):
             "TradeInfo": encrypted_trade_info,
             "TradeSha": trade_sha,  # TradeInfo 經 AES 加密後再 SHA256 加密,
             "Version": "1.6",
+            "trade_info": trade_info
         }
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
 
