@@ -82,7 +82,7 @@ class OrderCreate(APIView):
             "MerchantOrderNo": order.merchant_order_no,
             "TimeStamp": timezone.now().timestamp(),
             "RespondType": "JSON",
-            "Amt": order.amount,  # 訂單金額
+            "Amt": int(order.amount),  # 訂單金額
             "Version": "1.6",
             "ItemDesc": "第一次串接就成功！",
             "Email": order.user.email,
