@@ -31,6 +31,7 @@ class ImageUrlSerializer(serializers.ModelSerializer):
 
 class WebProductListSerializer(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField()
+    price = serializers.IntegerField()
 
     class Meta:
         model = Product
@@ -47,6 +48,7 @@ class OrderProductSerializer(WebProductListSerializer):
 
 
 class WebProductDetailSerializer(serializers.ModelSerializer):
+    price = serializers.IntegerField()
     imgUrl = serializers.SerializerMethodField()
     modelSum = serializers.IntegerField(source="model_count")
     fileSize = serializers.IntegerField(source="model_size")
