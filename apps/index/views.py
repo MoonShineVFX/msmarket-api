@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Banner, Tutorial
+from .models import Banner, Tutorial, AboutUs
 from ..product.models import Product
 from ..category.models import Tag
 
@@ -39,6 +39,16 @@ class IndexView(APIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class AboutUsView(RetrieveAPIView):
+    serializer_class = serializers.AboutUsSerializer
+
+    def get_object(self):
+        return AboutUs.objects.first()
+
+    def post(self, request, *args, **kwargs):
+        return self.get(self, request, *args, **kwargs)
 
 
 class TutorialListView(GenericAPIView):
