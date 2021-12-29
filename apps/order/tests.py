@@ -24,7 +24,6 @@ class OrderTest(TestCase):
         p2 = Product.objects.create(id=2, title="product02", preview="", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, status=0, creator_id=1)
 
-    @override_settings(DEBUG=True)
     def test_encrypt_with_AES_and_SHA(self):
         trade_info = {
             # 這些是藍新在傳送參數時的必填欄位
@@ -69,20 +68,48 @@ class OrderTest(TestCase):
 
         trade_info = urlencode(trade_info)
         c = AESCipher(key=key, iv=iv)
-        result = c.encrypt(raw=trade_info)
-        print(result)
+        ciphertext = c.encrypt(raw=trade_info)
 
-        result = "HashKey=%s&%s&HashIV=%s" % (key, result.decode("utf-8"), iv)
+        result = "HashKey=%s&%s&HashIV=%s" % (key, ciphertext.decode("utf-8"), iv)
         result = encrypt_with_SHA256(result)
 
         assert result == "EA0A6CC37F40C1EA5692E7CBB8AE097653DF3E91365E6A9CD7E91312413C7BB8"
 
-    @override_settings(DEBUG=True)
+        print(ciphertext)
+        result = c.decrypt(enc=ciphertext)
+        print(result)
+
     def test_SHA256(self):
         data = "HashKey=12345678901234567890123456789012&ff91c8aa01379e4de621a44e5f11f72e4d25bdb1a18242db6cef9ef07d80b0165e476fd1d9acaa53170272c82d122961e1a0700a7427cfa1cf90db7f6d6593bbc93102a4d4b9b66d9974c13c31a7ab4bba1d4e0790f0cbbbd7ad64c6d3c8012a601ceaa808bff70f94a8efa5a4f984b9d41304ffd879612177c622f75f4214fa&HashIV=1234567890123456"
         result = encrypt_with_SHA256(data)
-        print(result)
+
         assert result == "EA0A6CC37F40C1EA5692E7CBB8AE097653DF3E91365E6A9CD7E91312413C7BB8"
+
+    def test_response_TradeInfo_TradeSha_correct(self):
+        data = "c6f1fdd8595c20ba221ad3eb2e19d5aae4e50f96f99b4e271aff2f2839bafb70a372819b90dec91f1d9e9980499d657150237e99fe6bd3d40e74742ddb578191d7e1cd8cabf06a8d951d7eb59d75342aa2e4e592924f9e9c98765d866e8433fd71c7f75faa9344e232cef4fc234a8fd09a2fee72170452305d2390a6a0f1d7c817a337bf90d21b22f6f98d21750e3f63f31c1c13f3bad65ff6788ecb2ada43150462bded77ee74e870ee5d91e7ee943b97abfc26ab39983cc69d01ce827ad65fa4f6a87edc58f6ac5f3eb3470d17925365120a1b90e577f37ba2fd88786c8c34883aa9d79eb5d294fa8f45b0db809d053d5f9b09754df05e3f8ad58398c11232b9afd58b0d5287d68490457f25a8064d640f096f5fe4bbfd84a25d136bbd8e2789379c7db89ba7e380f807bdf17553b52cdd47cd9eb758f58feb0922721fa1bf05e96401dd88d12a79dc7c9ebdcc0b157b532b666bed08790daf8741eaad12d9c00087bc6349c968b8830d4d40bdeed52e3bb1bc6e86ebab14ba99b7e84d90d56dc97c014465b40970ff97e40839da2061e645a3f2d6fe4cdee829b46095992cbfcebc1f4e2cd533c1e915a063a38eea600e3c4d2a5f6ba0b5af4042f52fe25a5cac049674762aff60d9d9cc196ddbca3f746697f69ffd554071d06a85e9e14b"
+        result = add_keyIV_and_encrypt_with_SHA256(data)
+        assert result == "FF915DC66673057BC7B94804A4E5A23C1829CC0EEBB52D46ADC70E0FE1AFD01C"
+
+    def test_decrypt_TradeInfo_example(self):
+        ciphertext = "ff91c8aa01379e4de621a44e5f11f72e4d25bdb1a18242db6cef9ef07d80b0165e476fd1d9acaa53170272c82d122961e1a0700a7427cfa1cf90db7f6d6593bbc93102a4d4b9b66d9974c13c31a7ab4bba1d4e0790f0cbbbd7ad64c6d3c8012a601ceaa808bff70f94a8efa5a4f984b9d41304ffd879612177c622f75f4214fa"
+        key = '12345678901234567890123456789012'
+        iv = '1234567890123456'
+        c = AESCipher(key=key, iv=iv)
+        result = c.decrypt(enc=ciphertext)
+        assert result == "MerchantID=3430112&RespondType=JSON&TimeStamp=1485232229&Version=1.4&MerchantOrderNo=S_1485232229&Amt=40&ItemDesc=UnitTest"
+
+    def test_decrypt_TradeInfo(self):
+        ciphertext = "c6f1fdd8595c20ba221ad3eb2e19d5aae4e50f96f99b4e271aff2f2839bafb70a372819b90dec91f1d9e9980499d657150237e99fe6bd3d40e74742ddb578191d7e1cd8cabf06a8d951d7eb59d75342aa2e4e592924f9e9c98765d866e8433fd71c7f75faa9344e232cef4fc234a8fd09a2fee72170452305d2390a6a0f1d7c817a337bf90d21b22f6f98d21750e3f63f31c1c13f3bad65ff6788ecb2ada43150462bded77ee74e870ee5d91e7ee943b97abfc26ab39983cc69d01ce827ad65fa4f6a87edc58f6ac5f3eb3470d17925365120a1b90e577f37ba2fd88786c8c34883aa9d79eb5d294fa8f45b0db809d053d5f9b09754df05e3f8ad58398c11232b9afd58b0d5287d68490457f25a8064d640f096f5fe4bbfd84a25d136bbd8e2789379c7db89ba7e380f807bdf17553b52cdd47cd9eb758f58feb0922721fa1bf05e96401dd88d12a79dc7c9ebdcc0b157b532b666bed08790daf8741eaad12d9c00087bc6349c968b8830d4d40bdeed52e3bb1bc6e86ebab14ba99b7e84d90d56dc97c014465b40970ff97e40839da2061e645a3f2d6fe4cdee829b46095992cbfcebc1f4e2cd533c1e915a063a38eea600e3c4d2a5f6ba0b5af4042f52fe25a5cac049674762aff60d9d9cc196ddbca3f746697f69ffd554071d06a85e9e14b"
+        c = AESCipher()
+        result = c.decrypt(enc=ciphertext)
+        print(result)
+        assert result == {"Status": "SUCCESS", "Message": "\u6388\u6b0a\u6210\u529f",
+                          "Result": {"MerchantID": "MS326698321", "Amt": 100, "TradeNo": "21122717471292431",
+                                     "MerchantOrderNo": "MSM20211227000013", "RespondType": "JSON",
+                                     "IP": "203.69.143.113", "EscrowBank": "HNCB", "PaymentType": "CREDIT",
+                                     "RespondCode": "00", "Auth": "025171", "Card6No": "400022", "Card4No": "1111",
+                                     "Exp": "2703", "TokenUseStatus": "0", "InstFirst": 0, "InstEach": 0, "Inst": 0,
+                                     "ECI": "", "PayTime": "2021-12-27 17:47:12", "PaymentMethod": "CREDIT"}}
 
     @override_settings(DEBUG=True)
     @debugger_queries

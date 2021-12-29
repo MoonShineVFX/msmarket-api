@@ -11,19 +11,18 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Cart, Order, NewebpayPayment
+from .models import Cart, Order, NewebpayPayment, NewebpayResponse
 from ..product.models import Product
 from . import serializers
 
-import base64, re
+
 import hashlib
 import codecs
-from hashlib import md5
 from django.conf import settings
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-from urllib.parse import urlencode
-
+from urllib.parse import urlencode, parse_qs
+from binascii import hexlify
 
 # make utf8mb4 recognizable.
 codecs.register(lambda name: codecs.lookup('utf8') if name == 'utf8mb4' else None)
@@ -32,7 +31,7 @@ codecs.register(lambda name: codecs.lookup('utf8') if name == 'utf8mb4' else Non
 hash_key = settings.NEWEBPAY_HASHKEY
 hash_iv = settings.NEWEBPAY_HASHIV
 
-from binascii import hexlify, unhexlify
+today = timezone.now().date()
 
 
 class AESCipher:
@@ -42,19 +41,17 @@ class AESCipher:
         self.block_size = block_size
 
     def encrypt(self, raw):
-        raw = raw.encode('utf8mb4')
+        if type(raw) == str:
+            raw = raw.encode('utf8mb4')
         encryption_cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
         encrypted_text = encryption_cipher.encrypt(pad(raw, AES.block_size))
         return hexlify(encrypted_text)
 
     def decrypt(self, enc):
-        # enc is the encrypted value
-        if enc is None or len(enc) == 0:
-            raise NameError("No value given to decrypt")
-        enc = base64.b64decode(enc)
-        # AES.MODE_CFB that allows bigger length or latin values
-        cipher = AES.new(self.key.encode('utf8mb4'), AES.MODE_CBC, self.iv.encode('utf8mb4'))
-        return re.sub(b'\x00*$', b'', cipher.decrypt(enc)).decode('utf8mb4')
+        enc = codecs.decode(enc, "hex")
+        decipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        plaintext = unpad(decipher.decrypt(enc), AES.block_size)
+        return plaintext.decode('utf8mb4')
 
 
 def encrypt_with_SHA256(data=None):
@@ -65,7 +62,9 @@ def encrypt_with_SHA256(data=None):
 
 def add_keyIV_and_encrypt_with_SHA256(data=None):
     # AES 加密字串前後加上商店專屬加密 HashKey 與商店專屬加密 HashIV
-    data = "HashKey=%s&%s&HashIV=%s" % (hash_key, data.decode("utf-8"), hash_iv)
+    if type(data) == bytes:
+        data = data.decode("utf-8")
+    data = "HashKey=%s&%s&HashIV=%s" % (hash_key, data, hash_iv)
     # 將串聯後的字串用 SHA256 壓碼後轉大寫
     result = encrypt_with_SHA256(data)
 
@@ -99,7 +98,6 @@ class OrderCreate(APIView):
         return urlencode(trade_info_dict)
 
     def post(self, request, *args, **kwargs):
-        today = timezone.now().date()
         cart_ids = self.request.data.get('cartIds', [])
         carts = get_list_or_404(Cart.objects.select_related("product"), id__in=cart_ids, user=request.user)
 
@@ -162,6 +160,22 @@ class OrderDetail(APIView):
 
 class NewebpayPaymentNotify(CreateAPIView):
     serializer_class = serializers.NewebpayResponseSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        trade_info = serializer.validated_data["TradeInfo"]
+        trade_sha = serializer.validated_data["TradeSha"]
+
+        if (add_keyIV_and_encrypt_with_SHA256(trade_info) == trade_sha
+                and not NewebpayResponse.objects.filter(created_at__date=today, TradeSha=trade_sha).exists()):
+            self.perform_create(serializer)
+
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+
+    def decrypt_trade_info(self, encrypted_trade_info):
+        decrypted_trade_info = AESCipher().decrypt(enc=encrypted_trade_info)
 
 
 class CartProductList(GenericAPIView):

@@ -2,7 +2,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from rest_framework import serializers
-from .models import Order, Cart, NewebpayResponse
+from .models import Order, Cart, NewebpayResponse, NewebpayPayment
 from ..product.serializers import OrderProductSerializer
 
 
@@ -40,16 +40,23 @@ class NewebpayResponseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class NewebpayPaymentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = NewebpayPayment
+        fields = '__all__'
+
+
 class OrderSerializer(serializers.ModelSerializer):
     orderNumber = serializers.CharField(source="merchant_order_no")
     price = serializers.IntegerField(source="amount")
     totalItems = serializers.IntegerField(source="item_count")
     createdAt = serializers.DateTimeField(source="created_at")
-    paidAt = serializers.DateTimeField(source="paid_at")
-    paidBy = serializers.CharField(source="paid_by")
 
     invoice = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    paidAt = serializers.SerializerMethodField()
+    paidBy = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -60,11 +67,16 @@ class OrderSerializer(serializers.ModelSerializer):
         try:
             return instance.invoice.invoice_number
         except ObjectDoesNotExist:
-            return None
+            return ""
 
     def get_status(self, instance):
         return Order.STATUS[instance.status]
 
+    def get_paidAt(self, instance):
+        return instance.paid_at if instance.paid_at else ""
+
+    def get_paidBy(self, instance):
+        return instance.paid_by if instance.paid_by else ""
 
 class OrderDetailSerializer(OrderSerializer):
     products = OrderProductSerializer(many=True)

@@ -59,7 +59,7 @@ class NewebpayPayment(models.Model):
     payment_type = models.CharField(max_length=10)
     pay_time = models.DateTimeField()
     ip = models.CharField(max_length=15)
-    EscrowBank = models.CharField(max_length=10, null=True, blank=True)
+    escrow_bank = models.CharField(max_length=10, null=True, blank=True)
 
     objects = models.Manager()
 
