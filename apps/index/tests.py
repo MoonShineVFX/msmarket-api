@@ -26,7 +26,7 @@ class IndexTest(TestCase):
         Banner.objects.create(id=1, product=p1, creator=self.user)
         Banner.objects.create(id=2, product=p2, creator=self.user)
 
-        Tutorial.objects.create(id=1, title="tutorial01", creator=self.user)
+        Tutorial.objects.create(id=1, title="tutorial01", creator=self.user, link="https://medium.com")
         Tutorial.objects.create(id=2, title="tutorial02", creator=self.user)
 
     @override_settings(DEBUG=True)
@@ -41,6 +41,14 @@ class IndexTest(TestCase):
     @debugger_queries
     def test_index(self):
         url = '/api/index'
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_tutorials(self):
+        url = '/api/tutorials'
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200

@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -37,4 +38,17 @@ class IndexView(APIView):
             "tutorials": serializers.TutorialSerializer(tutorials, many=True).data,
         }
 
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class TutorialListView(GenericAPIView):
+    serializer_class = serializers.TutorialLinkSerializer
+    queryset = Tutorial.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = {
+            "list": serializer.data,
+        }
         return Response(data, status=status.HTTP_200_OK)
