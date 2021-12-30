@@ -6,7 +6,12 @@ from ..storage import PublicGoogleCloudStorage
 
 def get_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/products/<product_id>/
-    return 'products/{0}/{1}'.format(str(instance.product.id), filename)
+    if type(instance) == Product:
+        return '/'.join(["products", instance.id, filename])
+    if type(instance) == Model:
+        return '/'.join(["products", instance.product.id, "models", filename])
+    if type(instance) == Image:
+        return '/'.join(["products", instance.product.id, "images", filename])
 
 
 class Format(models.Model):
@@ -31,7 +36,7 @@ class Product(EditorBaseModel):
 
 
 class Model(EditorBaseModel):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="models")
     format = models.ForeignKey(Format, on_delete=models.CASCADE)
     renderer = models.ForeignKey(Renderer, on_delete=models.CASCADE)
     file = models.FileField(upload_to=get_directory_path)

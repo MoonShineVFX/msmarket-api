@@ -56,15 +56,3 @@ class ProductTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
-
-        data = [
-            {'id': 1, 'label': 'format01',
-             'renderers': [
-                 {'id': 1, 'label': 'renderer01'},
-                 {'id': 2, 'label': 'renderer02'}]
-             },
-            {'id': 2, 'label': 'format02',
-             'renderers': [{'id': 1, 'label': 'renderer01'}]
-             }
-        ]
-        self.assertEqual(response.data['formats'], data)

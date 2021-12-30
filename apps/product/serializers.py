@@ -47,6 +47,23 @@ class OrderProductSerializer(WebProductListSerializer):
         fields = ('id', 'title', 'imgUrl', 'price')
 
 
+class ModelSerializer(serializers.ModelSerializer):
+    formatId = serializers.IntegerField(source="format_id")
+    formatName = serializers.SerializerMethodField()
+    rendererId = serializers.IntegerField(source="renderer_id")
+    rendererName = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Model
+        fields = ('id', 'formatId', 'formatName', 'rendererId', 'rendererName', 'size')
+
+    def get_formatName(self, instance):
+        return instance.format.name
+
+    def get_rendererName(self, instance):
+        return instance.renderer.name
+
+
 class WebProductDetailSerializer(serializers.ModelSerializer):
     price = serializers.IntegerField()
     imgUrl = serializers.SerializerMethodField()
@@ -55,36 +72,17 @@ class WebProductDetailSerializer(serializers.ModelSerializer):
     perImgSize = serializers.IntegerField(source="texture_size")
 
     tags = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    formats = serializers.SerializerMethodField()
-    renderers = RendererSerializer(read_only=True)
+    models = ModelSerializer(many=True)
     images = ImageUrlSerializer(many=True)
     relativeProducts = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = ('id', 'title', "description", 'price', 'imgUrl', 'modelSum', 'fileSize', 'perImgSize', 'tags',
-                  'formats', 'renderers', 'images', 'relativeProducts')
+                  'models', 'images', 'relativeProducts')
 
     def get_imgUrl(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.preview) if instance.preview else None
-
-    def get_formats(self, instance):
-        models = Model.objects.filter(product_id=instance.id).values(
-            "format_id", "format__name", "renderer_id", "renderer__name").order_by("format_id").all()
-        formats = {}
-        for model in models:
-            if model["format_id"] not in formats:
-                formats[model["format_id"]] = {
-                    "id": model["format_id"],
-                    "label": model["format__name"],
-                    "renderers": []
-                }
-            formats[model["format_id"]]["renderers"].append(
-                {
-                    "id": model["renderer_id"],
-                    "label": model["renderer__name"]
-                })
-        return [value for key, value in formats.items()]
 
     def get_relativeProducts(self, instance):
         products = Product.objects.filter(~Q(id=instance.id), tags__in=instance.tags.all())[:4]

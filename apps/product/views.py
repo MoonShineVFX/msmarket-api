@@ -1,6 +1,7 @@
+from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from .models import Product
+from .models import Product, Model
 from ..category.models import category, category_key_2_id
 from . import serializers
 from ..pagination import ProductPagination
@@ -26,4 +27,14 @@ class WebProductList(ListAPIView):
 
 class WebProductDetail(RetrieveAPIView):
     serializer_class = serializers.WebProductDetailSerializer
-    queryset = Product.objects.prefetch_related('tags', "images")
+    models = Model.objects.select_related("format", "renderer")
+    queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))
+
+
+class MyProductList(ListAPIView):
+    serializer_class = serializers.WebProductDetailSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Product.objects.prefetch_related("models").filter(user_id=self.request.user.id)
+        return Product.objects.none()
