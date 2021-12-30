@@ -239,7 +239,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 
 if DEBUG == True:
-    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY = False
 
 
 # newebpay 金流
