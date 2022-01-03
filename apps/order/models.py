@@ -18,7 +18,7 @@ class Order(models.Model):
     user = models.ForeignKey(
         User, related_name="orders", on_delete=models.PROTECT)
 
-    products = models.ManyToManyField(Product)
+    products = models.ManyToManyField(Product, related_name="orders")
     merchant_order_no = models.CharField(max_length=30)
     status = models.IntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=4)
@@ -36,6 +36,10 @@ class Order(models.Model):
         2: "fail",
         3: "cancel"
     }
+    UNPAID = 0
+    SUCCESS = 1
+    FAIL = 2
+    CANCEL = 3
 
 
 class NewebpayResponse(models.Model):

@@ -87,3 +87,16 @@ class WebProductDetailSerializer(serializers.ModelSerializer):
     def get_relativeProducts(self, instance):
         products = Product.objects.filter(~Q(id=instance.id), tags__in=instance.tags.all())[:4]
         return WebProductListSerializer(products, many=True).data
+
+
+class MyProductSerializer(serializers.ModelSerializer):
+    imgUrl = serializers.SerializerMethodField()
+    fileSize = serializers.IntegerField(source="model_size")
+    models = ModelSerializer(many=True)
+
+    class Meta:
+        model = Product
+        fields = ('id', 'title', 'imgUrl', 'fileSize', 'models')
+
+    def get_imgUrl(self, instance):
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.preview) if instance.preview else None

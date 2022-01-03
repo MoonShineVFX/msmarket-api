@@ -2,6 +2,7 @@ from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from .models import Product, Model
+from ..order.models import Order
 from ..category.models import category, category_key_2_id
 from . import serializers
 from ..pagination import ProductPagination
@@ -32,9 +33,12 @@ class WebProductDetail(RetrieveAPIView):
 
 
 class MyProductList(ListAPIView):
-    serializer_class = serializers.WebProductDetailSerializer
+    serializer_class = serializers.MyProductSerializer
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return Product.objects.prefetch_related("models").filter(user_id=self.request.user.id)
+            paid_orders = Order.objects.filter(user_id=self.request.user.id, status=Order.SUCCESS)
+            models = Model.objects.select_related("format", "renderer")
+            return Product.objects.prefetch_related(
+                Prefetch('models', queryset=models)).filter(orders__in=paid_orders).distinct()
         return Product.objects.none()
