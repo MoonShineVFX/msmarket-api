@@ -3,11 +3,21 @@ on:
   push:
     branches:
       - master
+      - dev
+
+env:
+  SERVICE_NAME: ${{ env.SERVICE }}
+  SQL_INST: ${{ env.DATABASE_INSTANCE }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Change SERVICE_NAME if dev
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          echo "SERVICE_NAME=$SERVICE_NAME-dev" >> $GITHUB_ENV
+          echo "SQL_INST=SQL_INST-dev" >> $GITHUB_ENV
       - name: Checkout repo
         uses: actions/checkout@v2
       - name: Deploy to Cloud Run
@@ -19,9 +29,9 @@ jobs:
           SERVICE: backend
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
-          service: ${{ env.SERVICE }}
+          service: $SERVICE_NAME
           source: .
           region: ${{ env.REGION }}
-          credentials: ${{ secrets.GCP_SA_KEY }}
+          credentials: ${{ secrets.MODEL_LIB_GCP_SA_KEY }}
           env_vars: PRODUCTION=true,DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},SQL_HOST=${{ secrets.SQL_HOST }},DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }},API_HOST=${{ secrets.API_HOST }},NEWEBPAY_ID=${{ secrets.NEWEBPAY_ID }},NEWEBPAY_HASHKEY=${{ secrets.NEWEBPAY_HASHKEY }},NEWEBPAY_HASHIV=${{ secrets.NEWEBPAY_HASHIV }}
-          flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{env.DATABASE_INSTANCE}}"
+          flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:$SQL_INST"
