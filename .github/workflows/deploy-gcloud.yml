@@ -6,8 +6,8 @@ on:
       - dev
 
 env:
-  SERVICE_NAME: ${{ env.SERVICE }}
-  SQL_INST: ${{ env.DATABASE_INSTANCE }}
+  SERVICE_NAME: backend
+  SQL_INST: model-sql
 
 jobs:
   deploy:
@@ -25,8 +25,6 @@ jobs:
           CI: false
           PROJECT_ID: ms-model-lib
           REGION: asia-east1
-          DATABASE_INSTANCE: model-sql
-          SERVICE: backend
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
           service: $SERVICE_NAME
