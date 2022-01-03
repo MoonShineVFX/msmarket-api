@@ -27,9 +27,9 @@ jobs:
           REGION: asia-east1
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
-          service: $SERVICE_NAME
+          service: ${{ env.SERVICE_NAME }}
           source: .
           region: ${{ env.REGION }}
           credentials: ${{ secrets.MODEL_LIB_GCP_SA_KEY }}
           env_vars: PRODUCTION=true,DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},SQL_HOST=${{ secrets.SQL_HOST }},DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }},API_HOST=${{ secrets.API_HOST }},NEWEBPAY_ID=${{ secrets.NEWEBPAY_ID }},NEWEBPAY_HASHKEY=${{ secrets.NEWEBPAY_HASHKEY }},NEWEBPAY_HASHIV=${{ secrets.NEWEBPAY_HASHIV }}
-          flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:$SQL_INST"
+          flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{ env.SQL_INST }}"
