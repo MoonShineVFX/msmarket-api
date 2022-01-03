@@ -17,7 +17,7 @@ jobs:
         if: github.ref == 'refs/heads/dev'
         run: |
           echo "SERVICE_NAME=$SERVICE_NAME-dev" >> $GITHUB_ENV
-          echo "SQL_INST=SQL_INST-dev" >> $GITHUB_ENV
+          echo "SQL_INST=$SQL_INST-dev" >> $GITHUB_ENV
       - name: Checkout repo
         uses: actions/checkout@v2
       - name: Deploy to Cloud Run
