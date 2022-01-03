@@ -64,10 +64,7 @@ class OrderSerializer(serializers.ModelSerializer):
                   'createdAt', 'paidAt', 'paidBy')
 
     def get_invoice(self, instance):
-        try:
-            return instance.invoice.invoice_number
-        except ObjectDoesNotExist:
-            return ""
+        return instance.invoice_number if instance.invoice_number else ""
 
     def get_status(self, instance):
         return Order.STATUS[instance.status]
@@ -78,6 +75,7 @@ class OrderSerializer(serializers.ModelSerializer):
     def get_paidBy(self, instance):
         return instance.paid_by if instance.paid_by else ""
 
+
 class OrderDetailSerializer(OrderSerializer):
     products = OrderProductSerializer(many=True)
 
@@ -85,3 +83,39 @@ class OrderDetailSerializer(OrderSerializer):
         model = Order
         fields = ('id', 'orderNumber', 'price', 'status', 'totalItems', 'invoice',
                   'createdAt', 'paidAt', 'paidBy', 'products')
+
+
+class AdminOrderListSerializer(OrderSerializer):
+    account = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ('id', 'orderNumber', 'price', 'account', 'status', 'invoice',
+                  'createdAt', 'paidAt', 'paidBy')
+
+    def get_account(self, instance):
+        return instance.user.email
+
+
+class AdminOrderDetailSerializer(OrderDetailSerializer):
+    tradeNumber = serializers.SerializerMethodField()
+    account = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ('id', 'orderNumber', 'tradeNumber', 'price', 'account', 'status', 'invoice',
+                  'createdAt', 'paidAt', 'paidBy', 'products')
+
+    def get_tradeNumber(self, instance):
+        return instance.success_payment.trade_no if instance.success_payment else ""
+
+    def get_account(self, instance):
+        return instance.user.email
+
+
+class AdminOrderSearchParamsSerializer(serializers.Serializer):
+    orderNumber = serializers.CharField(source="merchant_order_no", allow_null=True)
+    account = serializers.CharField(source="email", allow_null=True)
+    invoice = serializers.CharField(source="invoice_number", allow_null=True)
+    startDate = serializers.DateField(source="start_date", allow_null=True)
+    endDate = serializers.DateField(source="end_date", allow_null=True)

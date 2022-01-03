@@ -17,7 +17,7 @@ class RegisterCustomerSerializer(serializers.Serializer):
         email = validated_data.pop('email')
         password = validated_data.pop('password')
 
-        user = User.objects.create(name=name, nick_name=nick_name, email=email, is_customer=True)
+        user = User.objects.create(name=name, nick_name=nick_name, email=email)
         user.set_password(raw_password=password)
         user.save()
         return user

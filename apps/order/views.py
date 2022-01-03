@@ -9,7 +9,7 @@ from ..shortcuts import PostDestroyView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from .models import Cart, Order, NewebpayPayment, NewebpayResponse
 from ..product.models import Product
@@ -137,6 +137,9 @@ class OrderList(GenericAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.OrderSerializer
 
+    def get(self, request, *args, **kwargs):
+        return self.post(self, request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
@@ -146,16 +149,64 @@ class OrderList(GenericAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def get_queryset(self):
-        return Order.objects.prefetch_related("invoice").filter(user=self.request.user)
+        return Order.objects.filter(user=self.request.user)
 
 
-class OrderDetail(APIView):
+class OrderDetail(GenericAPIView):
     permission_classes = (IsAuthenticated, )
+    serializer_class = serializers.OrderSerializer
+    queryset = Order.objects.prefetch_related("products")
 
     def get(self, request, order_number, *args, **kwargs):
-        order = get_object_or_404(Order.objects.prefetch_related("invoice", "products"), merchant_order_no=order_number)
-        serializer = serializers.OrderDetailSerializer(order)
+        order = get_object_or_404(self.queryset, merchant_order_no=order_number)
+        serializer = self.serializer_class(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminOrderSearch(GenericAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def post(self, request, *args, **kwargs):
+        serializer = serializers.AdminOrderSearchParamsSerializer(data=self.request.data)
+        serializer.is_valid()
+
+        orders = Order.objects.select_related("user")
+
+        merchant_order_no = serializer.validated_data.get('merchant_order_no', None)
+        email = serializer.validated_data.get('email', None)
+        invoice_number = serializer.validated_data.get('invoice_number', None)
+        start_date = serializer.validated_data.get('start_date', None)
+        end_date = serializer.validated_data.get('end_date', None)
+
+        if merchant_order_no:
+            orders = orders.filter(merchant_order_no=merchant_order_no)
+        if email:
+            orders = orders.filter(user__email=email)
+        if invoice_number:
+            orders = orders.filter(invoice_number=invoice_number)
+        if start_date:
+            orders = orders.filter(reated_at__date__gte=start_date)
+        if start_date:
+            orders = orders.filter(created_at__date__lte=end_date)
+
+        data = {
+            "list": serializers.AdminOrderListSerializer(orders, many=True).data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class AdminOrderList(OrderList):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminOrderListSerializer
+
+    def get_queryset(self):
+        return Order.objects.select_related("user").all()
+
+
+class AdminOrderDetail(OrderDetail):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminOrderDetailSerializer
+    queryset = Order.objects.select_related("user").prefetch_related("products")
 
 
 class NewebpayPaymentNotify(CreateAPIView):

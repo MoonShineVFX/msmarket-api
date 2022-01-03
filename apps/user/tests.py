@@ -24,8 +24,7 @@ class UserTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com",
-                                   is_customer=True).exists()
+        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries

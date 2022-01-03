@@ -17,12 +17,15 @@ class Cart(models.Model):
 class Order(models.Model):
     user = models.ForeignKey(
         User, related_name="orders", on_delete=models.PROTECT)
+    success_payment = models.OneToOneField(
+        "NewebpayPayment", related_name="success_order", on_delete=models.PROTECT, null=True)
 
     products = models.ManyToManyField(Product, related_name="orders")
     merchant_order_no = models.CharField(max_length=30)
     status = models.IntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=4)
     item_count = models.IntegerField(default=0)
+    invoice_number = models.CharField(max_length=10, null=True)
 
     paid_at = models.DateTimeField(null=True)
     paid_by = models.CharField(max_length=10, null=True)

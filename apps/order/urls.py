@@ -6,6 +6,10 @@ urlpatterns = [
     url(r'^orders$', views.OrderList.as_view(), name='order_list'),
     url(r'^orders/(?P<order_number>[0-9A-Za-z\-]+)$', views.OrderDetail.as_view(), name='order_detail'),
 
+    url(r'^admin_orders$', views.AdminOrderList.as_view(), name='admin_order_list'),
+    url(r'^admin_order_search$', views.AdminOrderSearch.as_view(), name='admin_order_search'),
+    url(r'^admin_orders/(?P<order_number>[0-9A-Za-z\-]+)$', views.AdminOrderDetail.as_view(), name='admin_order_detail'),
+
     url(r'^newebpay_payment_notify$', views.NewebpayPaymentNotify.as_view(), name='newebpay-payment-notify'),
 
     url(r'^cart_products$', views.CartProductList.as_view(), name='cart_product_list'),

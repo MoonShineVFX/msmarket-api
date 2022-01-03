@@ -18,6 +18,7 @@ class OrderTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
+        self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
 
         p1 = Product.objects.create(id=1, title="product01", preview="", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, status=0, creator_id=1)
@@ -164,6 +165,65 @@ class OrderTest(TestCase):
         url = '/api/orders/{}'.format(merchant_order_no)
         self.client.force_authenticate(user=self.user)
         response = self.client.get(url)
+        assert response.status_code == 200
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_order_list(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 2)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("100"), status=2)
+
+        url = '/api/admin_orders'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        assert response.status_code == 403
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        assert response.status_code == 200
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_order_detail(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+        order.products.set([1, 2])
+
+        url = '/api/admin_orders/{}'.format(merchant_order_no)
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        assert response.status_code == 403
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        assert response.status_code == 200
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_order_search(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+        order.products.set([1, 2])
+
+        url = '/api/admin_order_search'
+        data = {
+            "orderNumber": merchant_order_no,
+            "account": "user01@mail.com",
+            #"invoice": "TradeInfo",
+            "startDate": "2021-01-01",
+            "endDate": timezone.now().date().isoformat()
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
         assert response.status_code == 200
         print(response.data)
 
