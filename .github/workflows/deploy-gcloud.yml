@@ -16,9 +16,12 @@ jobs:
       - name: Change SERVICE_NAME if dev
         if: github.ref == 'refs/heads/dev'
         run: |
-          branch=${GITHUB_REF##*/}
           echo "SERVICE_NAME=$SERVICE_NAME-dev" >> $GITHUB_ENV
           echo "SQL_INST=$SQL_INST-dev" >> $GITHUB_ENV
+      - name: Create variables
+        id: vars
+        run: |
+          branch=${GITHUB_REF##*/}
           echo "::set-output name=API_HOST::API_HOST_${branch^^}"
           echo "::set-output name=SQL_HOST::SQL_HOST_${branch^^}"
       - name: Checkout repo
@@ -28,17 +31,11 @@ jobs:
           CI: false
           PROJECT_ID: ms-model-lib
           REGION: asia-east1
-          PRODUCTION: ${{ secrets.PRODUCTION }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASS: ${{ secrets.DB_PASS }}
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          NEWEBPAY_ID: ${{ secrets.NEWEBPAY_ID }}
-          NEWEBPAY_HASHKEY: ${{ secrets.NEWEBPAY_HASHKEY }}
-          NEWEBPAY_HASHIV: ${{ secrets.NEWEBPAY_HASHIV }}
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
           service: ${{ env.SERVICE_NAME }}
           source: .
           region: ${{ env.REGION }}
           credentials: ${{ secrets.MODEL_LIB_GCP_SA_KEY }}
-        flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{ env.SQL_INST }}"
+          env_vars: PRODUCTION=true,DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},SQL_HOST=${{ secrets[steps.vars.outputs.SQL_HOST] }},DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }},API_HOST=${{ secrets[steps.vars.outputs.API_HOST] }},NEWEBPAY_ID=${{ secrets.NEWEBPAY_ID }},NEWEBPAY_HASHKEY=${{ secrets.NEWEBPAY_HASHKEY }},NEWEBPAY_HASHIV=${{ secrets.NEWEBPAY_HASHIV }}
+          flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{ env.SQL_INST }}"
