@@ -8,7 +8,7 @@ from . import serializers
 from ..pagination import ProductPagination
 
 
-class WebProductList(ListAPIView):
+class ProductList(ListAPIView):
     pagination_class = ProductPagination
     serializer_class = serializers.WebProductListSerializer
     queryset = Product.objects.prefetch_related('tags').all()
@@ -26,7 +26,7 @@ class WebProductList(ListAPIView):
         return queryset
 
 
-class WebProductDetail(RetrieveAPIView):
+class ProductDetail(RetrieveAPIView):
     serializer_class = serializers.WebProductDetailSerializer
     models = Model.objects.select_related("format", "renderer")
     queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))

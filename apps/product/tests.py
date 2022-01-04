@@ -37,24 +37,24 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_get_web_product_list(self):
-        url = '/api/web_products'
+    def test_get_product_list(self):
+        url = '/api/products'
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_get_web_product_list_with_tags(self):
-        url = '/api/web_products?tags=1'
+    def test_get_product_list_with_tags(self):
+        url = '/api/products?tags=1'
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_get_web_product_detail(self):
-        url = '/api/web_products/1'
+    def test_get_product_detail(self):
+        url = '/api/products/1'
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
