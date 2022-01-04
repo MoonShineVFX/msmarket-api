@@ -35,7 +35,7 @@ jobs:
           region: ${{ env.REGION }}
           credentials: ${{ secrets.MODEL_LIB_GCP_SA_KEY }}
           env:
-            PRODUCTION: "true"
+            PRODUCTION: ${{ secrets.PRODUCTION }}
             DB_USER: ${{ secrets.DB_USER }}
             DB_PASS: ${{ secrets.DB_PASS }}
             DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
