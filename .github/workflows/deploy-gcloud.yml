@@ -28,18 +28,17 @@ jobs:
           CI: false
           PROJECT_ID: ms-model-lib
           REGION: asia-east1
+          PRODUCTION: ${{ secrets.PRODUCTION }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          NEWEBPAY_ID: ${{ secrets.NEWEBPAY_ID }}
+          NEWEBPAY_HASHKEY: ${{ secrets.NEWEBPAY_HASHKEY }}
+          NEWEBPAY_HASHIV: ${{ secrets.NEWEBPAY_HASHIV }}
         uses: google-github-actions/deploy-cloudrun@v0.6.0
         with:
           service: ${{ env.SERVICE_NAME }}
           source: .
           region: ${{ env.REGION }}
           credentials: ${{ secrets.MODEL_LIB_GCP_SA_KEY }}
-          env:
-            PRODUCTION: ${{ secrets.PRODUCTION }}
-            DB_USER: ${{ secrets.DB_USER }}
-            DB_PASS: ${{ secrets.DB_PASS }}
-            DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-            NEWEBPAY_ID: ${{ secrets.NEWEBPAY_ID }}
-            NEWEBPAY_HASHKEY: ${{ secrets.NEWEBPAY_HASHKEY }}
-            NEWEBPAY_HASHIV: ${{ secrets.NEWEBPAY_HASHIV }}
-          flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{ env.SQL_INST }}"
+        flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{ env.SQL_INST }}"
