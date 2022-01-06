@@ -8,7 +8,7 @@ from ..product.models import Product
 from ..category.models import Tag
 
 from ..category.serializers import TagNameOnlySerializer
-from ..product.serializers import WebProductListSerializer
+from ..product.serializers import ProductListSerializer
 from . import serializers
 
 
@@ -34,7 +34,7 @@ class IndexView(APIView):
 
         data = {
             "banners": serializers.BannerProductSerializer(banner_products, many=True).data,
-            "newArrivals": WebProductListSerializer(new_products, many=True).data,
+            "newArrivals": ProductListSerializer(new_products, many=True).data,
             "tutorials": serializers.TutorialSerializer(tutorials, many=True).data,
         }
 

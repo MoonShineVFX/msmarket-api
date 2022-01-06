@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from rest_framework import serializers
 from django.conf import settings
-from ..product.serializers import WebProductListSerializer
+from ..product.serializers import ProductListSerializer
 from .models import Product, Tutorial, AboutUs
 
 
-class BannerProductSerializer(WebProductListSerializer):
+class BannerProductSerializer(ProductListSerializer):
     class Meta:
         model = Product
         fields = ('id', 'title', 'description', 'imgUrl', 'price', 'status')

@@ -13,6 +13,7 @@ from ..order.models import Order
 class ProductTest(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         t1 = Tag.objects.create(id=1, name="tag01", creator_id=1)
         t2 = Tag.objects.create(id=2, name="tag02", creator_id=1)
@@ -23,10 +24,10 @@ class ProductTest(TestCase):
         Format.objects.create(id=1, name="format01")
         Format.objects.create(id=2, name="format02")
 
-        p1 = Product.objects.create(id=1, title="product01", preview="", description="", price=Decimal(1), model_size=0,
-                               model_count=4, texture_size=0, status=0, creator_id=1)
-        p2 = Product.objects.create(id=2, title="product02", preview="", description="", price=Decimal(1), model_size=0,
-                               model_count=4, texture_size=0, status=0, creator_id=1)
+        p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
+                               model_count=4, texture_size=0, is_active=True, creator_id=1)
+        p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
+                               model_count=4, texture_size=0, is_active=True, creator_id=1)
         p1.tags.add(t1, t2)
         p2.tags.add(t1)
 
@@ -63,7 +64,7 @@ class ProductTest(TestCase):
     @debugger_queries
     def test_get_my_products(self):
         Product.objects.create(id=3, title="product03", preview="", description="", price=Decimal(1), model_size=0,
-                               model_count=4, texture_size=0, status=0, creator_id=1)
+                               model_count=4, texture_size=0, creator_id=1)
         order = Order.objects.create(
             user=self.user, status=Order.SUCCESS, merchant_order_no="MSM20211201000001", amount=1000)
         order.products.set([1, 2])
@@ -94,3 +95,21 @@ class ProductTest(TestCase):
              ('size', 0)])])]),
          OrderedDict([('id', 2), ('title', 'product02'), ('imgUrl', None), ('fileSize', 0), ('models', [])])]
         assert response.data == expect
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_admin_product_list(self):
+        url = '/api/admin_products'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_admin_product_detail(self):
+        url = '/api/admin_products/1'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200

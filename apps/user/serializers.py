@@ -21,3 +21,7 @@ class RegisterCustomerSerializer(serializers.Serializer):
         user.set_password(raw_password=password)
         user.save()
         return user
+
+
+class ForgetPasswordSerializer(serializers.Serializer):
+    email = serializers.CharField(required=False)

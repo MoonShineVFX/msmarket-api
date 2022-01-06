@@ -75,9 +75,8 @@ class GuestLogin(APIView):
 
 class ForgetPasswordView(APIView):
     def post(self, request):
-        serializer = serializers.SendResetEmailSerializer(data=request.data)
+        serializer = serializers.ForgetPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            account = serializer.validated_data['account']
             email = serializer.validated_data['email']
             user = get_object_or_404(User, email=email)
             token = default_token_generator.make_token(user)

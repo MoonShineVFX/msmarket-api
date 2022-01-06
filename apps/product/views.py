@@ -6,17 +6,18 @@ from ..order.models import Order
 from ..category.models import category, category_key_2_id
 from . import serializers
 from ..pagination import ProductPagination
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 
 class ProductList(ListAPIView):
     pagination_class = ProductPagination
-    serializer_class = serializers.WebProductListSerializer
+    serializer_class = serializers.ProductListSerializer
     queryset = Product.objects.prefetch_related('tags').all()
 
     def filter_queryset(self, queryset):
         category_key = self.request.query_params.get('type', 'all')
-        if category_key != "all":
-            queryset = queryset.filter(status=category_key_2_id[category_key])
+        if category_key != "all" and category_key in category:
+            queryset = queryset.filter(status=category_key_2_id.get(category_key))
 
         tag_ids = self.request.query_params.get('tags', None)
         if tag_ids:
@@ -27,7 +28,7 @@ class ProductList(ListAPIView):
 
 
 class ProductDetail(RetrieveAPIView):
-    serializer_class = serializers.WebProductDetailSerializer
+    serializer_class = serializers.ProductDetailSerializer
     models = Model.objects.select_related("format", "renderer")
     queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))
 
@@ -42,3 +43,27 @@ class MyProductList(ListAPIView):
             return Product.objects.prefetch_related(
                 Prefetch('models', queryset=models)).filter(orders__in=paid_orders).distinct()
         return Product.objects.none()
+
+
+class AdminProductList(ListAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminProductListSerializer
+    queryset = Product.objects.select_related(
+        "creator", "updater").prefetch_related('tags').order_by(
+        "active_at", "inactive_at", "updated_at", "created_at")
+
+
+class AdminProductSearch(AdminProductList):
+    def filter_queryset(self, queryset):
+        query = self.request.data.get('query', None)
+        if query:
+            queryset = queryset.filter(title__icontains=query)
+        return queryset
+
+
+class AdminProductDetail(RetrieveAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminProductDetailSerializer
+    queryset = Product.objects.select_related(
+        "main_image", "mobile_main_image", "thumb_image", "extend_image",
+        "creator", "updater").prefetch_related("tags", "images")

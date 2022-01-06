@@ -24,15 +24,20 @@ class Renderer(models.Model):
 
 class Product(EditorBaseModel):
     title = models.CharField(max_length=200)
-    preview = models.ImageField(upload_to=get_directory_path,
-                                storage=PublicGoogleCloudStorage)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=4)
     model_size = models.IntegerField()
     model_count = models.IntegerField()
     texture_size = models.IntegerField()
     tags = models.ManyToManyField(Tag)
-    status = models.IntegerField()
+    is_active = models.BooleanField(default=False)
+    active_at = models.DateTimeField(null=True)
+    inactive_at = models.DateTimeField(null=True)
+
+    main_image = models.OneToOneField("Image", null=True, related_name="main_product", on_delete=models.SET_NULL)
+    mobile_main_image = models.OneToOneField("Image", null=True, related_name="mobile_main_product", on_delete=models.SET_NULL)
+    thumb_image = models.OneToOneField("Image", null=True, related_name="thumb_product", on_delete=models.SET_NULL)
+    extend_image = models.OneToOneField("Image", null=True, related_name="extend_product", on_delete=models.SET_NULL)
 
 
 class Model(EditorBaseModel):
@@ -48,6 +53,13 @@ class Image(EditorBaseModel):
     file = models.ImageField(upload_to=get_directory_path,
                              storage=PublicGoogleCloudStorage)
     size = models.IntegerField()
+    position_id = models.IntegerField(default=1)
+
+    PREVIEW = 1
+    MAIN = 2
+    MOBILE_MAIN = 3
+    THUMB = 4
+    EXTEND = 5
 
 
 class Price(EditorBaseModel):
