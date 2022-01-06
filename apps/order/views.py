@@ -179,11 +179,11 @@ class AdminOrderSearch(GenericAPIView):
         end_date = serializer.validated_data.get('end_date', None)
 
         if merchant_order_no:
-            orders = orders.filter(merchant_order_no=merchant_order_no)
+            orders = orders.filter(merchant_order_no__icontains=merchant_order_no)
         if email:
-            orders = orders.filter(user__email=email)
+            orders = orders.filter(user__email__icontains=email)
         if invoice_number:
-            orders = orders.filter(invoice_number=invoice_number)
+            orders = orders.filter(invoice_number__icontains=invoice_number)
         if start_date:
             orders = orders.filter(reated_at__date__gte=start_date)
         if start_date:
