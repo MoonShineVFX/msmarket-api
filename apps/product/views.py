@@ -1,6 +1,7 @@
 from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
+from ..shortcuts import WebCreateView
 from .models import Product, Model
 from ..order.models import Order
 from ..category.models import category, category_key_2_id
@@ -67,3 +68,8 @@ class AdminProductDetail(RetrieveAPIView):
     queryset = Product.objects.select_related(
         "main_image", "mobile_main_image", "thumb_image", "extend_image",
         "creator", "updater").prefetch_related("tags", "images")
+
+
+class AdminProductCreate(WebCreateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminProductCreateSerializer

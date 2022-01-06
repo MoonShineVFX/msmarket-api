@@ -91,7 +91,7 @@ class ProductDetailSerializer(ImgUrlMixin):
     price = serializers.IntegerField()
     modelSum = serializers.IntegerField(source="model_count")
     fileSize = serializers.IntegerField(source="model_size")
-    perImgSize = serializers.IntegerField(source="texture_size")
+    perImgSize = serializers.CharField(source="texture_size")
 
     tags = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     models = ModelSerializer(many=True)
@@ -151,3 +151,12 @@ class AdminProductDetailSerializer(ProductDetailSerializer, EditorBaseSerializer
         web_images = filter(None, web_images)
         return WebImageSerializer(web_images, many=True).data
 
+
+class AdminProductCreateSerializer(serializers.ModelSerializer):
+    modelSum = serializers.IntegerField(source="model_count")
+    perImgSize = serializers.CharField(source="texture_size")
+    isActive = serializers.BooleanField(source="is_active")
+
+    class Meta:
+        model = Product
+        fields = ('title', "description", 'price', 'modelSum', 'perImgSize', 'tags', 'isActive')

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from django.test import TestCase
 from rest_framework.test import APIClient
 from django.test.utils import override_settings
@@ -25,9 +25,9 @@ class ProductTest(TestCase):
         Format.objects.create(id=2, name="format02")
 
         p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
-                               model_count=4, texture_size=0, is_active=True, creator_id=1)
+                               model_count=4, texture_size="1920x1080", is_active=True, creator_id=1)
         p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
-                               model_count=4, texture_size=0, is_active=True, creator_id=1)
+                               model_count=4, texture_size="1920x1080", is_active=True, creator_id=1)
         p1.tags.add(t1, t2)
         p2.tags.add(t1)
 
@@ -113,3 +113,26 @@ class ProductTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_product_create(self):
+        url = '/api/admin_product_create'
+        data = {
+            "title": "title",
+            "description": "description",
+            "price": 1000,
+            "modelSum": 2,
+            "perImgSize": "1800x1800",
+            "tags": [1, 2],
+            "isActive": True
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 201
+
+        product = Product.objects.filter(title="title", price=1000, creator=self.admin).first()
+        assert product is not None
+
+        tags = [tag.id for tag in product.tags.all()]
+        self.assertEqual(Counter(tags), Counter([1, 2]))
