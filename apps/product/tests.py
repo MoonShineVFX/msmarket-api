@@ -136,3 +136,28 @@ class ProductTest(TestCase):
 
         tags = [tag.id for tag in product.tags.all()]
         self.assertEqual(Counter(tags), Counter([1, 2]))
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_product_update(self):
+        url = '/api/admin_product_update'
+        data = {
+            "id": 2,
+            "title": "new_title",
+            "description": "new_description",
+            "price": 1000,
+            "modelSum": 2,
+            "perImgSize": "1800x1800",
+            "tags": [1, 2],
+            "isActive": True
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 200
+
+        product = Product.objects.filter(id=2, title="new_title", price=1000, updater=self.admin).first()
+        assert product is not None
+
+        tags = [tag.id for tag in product.tags.all()]
+        self.assertEqual(Counter(tags), Counter([1, 2]))        
+

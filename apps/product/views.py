@@ -1,7 +1,7 @@
 from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from ..shortcuts import WebCreateView
+from ..shortcuts import WebCreateView, PostUpdateView
 from .models import Product, Model
 from ..order.models import Order
 from ..category.models import category, category_key_2_id
@@ -73,3 +73,9 @@ class AdminProductDetail(RetrieveAPIView):
 class AdminProductCreate(WebCreateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
+
+
+class AdminProductUpdate(PostUpdateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminProductCreateSerializer
+    queryset = Product
