@@ -30,7 +30,7 @@ class Product(EditorBaseModel):
     model_size = models.IntegerField(null=True)
     model_count = models.IntegerField(null=True)
     texture_size = models.CharField(max_length=20, null=True)
-    tags = models.ManyToManyField(Tag)
+    tags = models.ManyToManyField(Tag, blank=True)
     is_active = models.BooleanField(default=False)
     active_at = models.DateTimeField(null=True)
     inactive_at = models.DateTimeField(null=True)

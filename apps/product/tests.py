@@ -140,6 +140,7 @@ class ProductTest(TestCase):
         }
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="json")
+        print(response.data)
         assert response.status_code == 201
 
         product = Product.objects.filter(title="title", price=1000, creator=self.admin).first()

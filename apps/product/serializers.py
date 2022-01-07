@@ -188,6 +188,7 @@ class AdminProductCreateSerializer(serializers.ModelSerializer):
     perImgSize = serializers.CharField(source="texture_size")
     isActive = serializers.BooleanField(source="is_active")
 
+
     class Meta:
         model = Product
         fields = ('title', "description", 'price', 'modelSum', 'fileSize', 'perImgSize', 'tags', 'isActive')
