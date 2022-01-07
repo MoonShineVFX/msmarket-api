@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView
+from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView
 from .models import Product, Model, Image
 from ..order.models import Order
 from ..category.models import category, category_key_2_id
@@ -35,7 +35,7 @@ class ProductDetail(RetrieveAPIView):
     queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))
 
 
-class MyProductList(ListAPIView):
+class MyProductList(PostListView):
     serializer_class = serializers.MyProductSerializer
 
     def get_queryset(self):
@@ -47,15 +47,12 @@ class MyProductList(ListAPIView):
         return Product.objects.none()
 
 
-class AdminProductList(ListAPIView):
+class AdminProductList(PostListView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductListSerializer
     queryset = Product.objects.select_related(
         "creator", "updater").prefetch_related('tags').order_by(
         "active_at", "inactive_at", "updated_at", "created_at")
-
-    def post(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
 
 
 class AdminProductSearch(AdminProductList):

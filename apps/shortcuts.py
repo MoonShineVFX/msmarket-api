@@ -73,6 +73,19 @@ def debugger_queries(func):
     return wrapper
 
 
+class PostListView(GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        return self.post(self, request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = {
+            "list": serializer.data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
 class PostCreateView(CreateAPIView):
     permission_classes = (IsAuthenticated, )
 

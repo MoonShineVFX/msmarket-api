@@ -70,8 +70,8 @@ class ProductTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_get_my_products(self):
-        Product.objects.create(id=3, title="product03", preview="", description="", price=Decimal(1), model_size=0,
-                               model_count=4, texture_size=0, creator_id=1)
+        Product.objects.create(id=3, title="product03", description="", price=Decimal(1), model_size=0,
+                               model_count=4, texture_size="1800x1800", creator_id=1)
         order = Order.objects.create(
             user=self.user, status=Order.SUCCESS, merchant_order_no="MSM20211201000001", amount=1000)
         order.products.set([1, 2])
@@ -89,7 +89,6 @@ class ProductTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
-        assert len(response.data) == 2
 
         expect = [
             OrderedDict([('id', 1), ('title', 'product01'), ('imgUrl', None), ('fileSize', 0),
@@ -101,7 +100,7 @@ class ProductTest(TestCase):
             [('id', 3), ('formatId', 2), ('formatName', 'format02'), ('rendererId', 1), ('rendererName', 'renderer01'),
              ('size', 0)])])]),
          OrderedDict([('id', 2), ('title', 'product02'), ('imgUrl', None), ('fileSize', 0), ('models', [])])]
-        assert response.data == expect
+        assert response.data['list'] == expect
 
     @override_settings(DEBUG=True)
     @debugger_queries
