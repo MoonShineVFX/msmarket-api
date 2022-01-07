@@ -217,8 +217,8 @@ class OrderTest(TestCase):
         url = '/api/admin_order_search'
         data = {
             "orderNumber": merchant_order_no,
-            "account": "user01@mail.com",
-            #"invoice": "TradeInfo",
+            "account": "",
+            "invoice": "",
             "startDate": "2021-01-01",
             "endDate": timezone.now().date().isoformat()
         }

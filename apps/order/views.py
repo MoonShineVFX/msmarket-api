@@ -185,7 +185,7 @@ class AdminOrderSearch(GenericAPIView):
                 orders = orders.filter(invoice_number__icontains=invoice_number)
             if start_date:
                 orders = orders.filter(created_at__date__gte=start_date)
-            if start_date:
+            if end_date:
                 orders = orders.filter(created_at__date__lte=end_date)
 
             data = {
