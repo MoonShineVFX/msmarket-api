@@ -168,31 +168,31 @@ class AdminOrderSearch(GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = serializers.AdminOrderSearchParamsSerializer(data=self.request.data)
-        serializer.is_valid()
+        if serializer.is_valid():
+            orders = Order.objects.select_related("user")
 
-        orders = Order.objects.select_related("user")
+            merchant_order_no = serializer.data.get('orderNumber', None)
+            email = serializer.data.get('account', None)
+            invoice_number = serializer.data.get('invoice', None)
+            start_date = serializer.data.get('startDate', None)
+            end_date = serializer.data.get('endDate', None)
 
-        merchant_order_no = serializer.validated_data.get('merchant_order_no', None)
-        email = serializer.validated_data.get('email', None)
-        invoice_number = serializer.validated_data.get('invoice_number', None)
-        start_date = serializer.validated_data.get('start_date', None)
-        end_date = serializer.validated_data.get('end_date', None)
+            if merchant_order_no:
+                orders = orders.filter(merchant_order_no__icontains=merchant_order_no)
+            if email:
+                orders = orders.filter(user__email__icontains=email)
+            if invoice_number:
+                orders = orders.filter(invoice_number__icontains=invoice_number)
+            if start_date:
+                orders = orders.filter(created_at__date__gte=start_date)
+            if start_date:
+                orders = orders.filter(created_at__date__lte=end_date)
 
-        if merchant_order_no:
-            orders = orders.filter(merchant_order_no__icontains=merchant_order_no)
-        if email:
-            orders = orders.filter(user__email__icontains=email)
-        if invoice_number:
-            orders = orders.filter(invoice_number__icontains=invoice_number)
-        if start_date:
-            orders = orders.filter(reated_at__date__gte=start_date)
-        if start_date:
-            orders = orders.filter(created_at__date__lte=end_date)
-
-        data = {
-            "list": serializers.AdminOrderListSerializer(orders, many=True).data,
-        }
-        return Response(data, status=status.HTTP_200_OK)
+            data = {
+                "list": serializers.AdminOrderListSerializer(orders, many=True).data,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminOrderList(OrderList):

@@ -20,10 +20,10 @@ class OrderTest(TestCase):
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
 
-        p1 = Product.objects.create(id=1, title="product01", preview="", description="", price=Decimal(1), model_size=0,
-                                    model_count=4, texture_size=0, status=0, creator_id=1)
-        p2 = Product.objects.create(id=2, title="product02", preview="", description="", price=Decimal(1), model_size=0,
-                                    model_count=4, texture_size=0, status=0, creator_id=1)
+        p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
+                                    model_count=4, texture_size="1800x1800", creator_id=1)
+        p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
+                                    model_count=4, texture_size="1800x1800", creator_id=1)
 
     def test_encrypt_with_AES_and_SHA(self):
         trade_info = {

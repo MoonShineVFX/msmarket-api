@@ -114,8 +114,8 @@ class AdminOrderDetailSerializer(OrderDetailSerializer):
 
 
 class AdminOrderSearchParamsSerializer(serializers.Serializer):
-    orderNumber = serializers.CharField(source="merchant_order_no", allow_null=True)
-    account = serializers.CharField(source="email", allow_null=True)
-    invoice = serializers.CharField(source="invoice_number", allow_null=True)
-    startDate = serializers.DateField(source="start_date", allow_null=True)
-    endDate = serializers.DateField(source="end_date", allow_null=True)
+    orderNumber = serializers.CharField(source="merchant_order_no", required=False)
+    account = serializers.EmailField(source="email", required=False)
+    invoice = serializers.CharField(source="invoice_number", required=False)
+    startDate = serializers.DateField(source="start_date", required=False)
+    endDate = serializers.DateField(source="end_date", required=False)
