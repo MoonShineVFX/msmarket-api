@@ -1,17 +1,18 @@
 from django.db import models
 from apps.user.models import EditorBaseModel
 from apps.category.models import Tag
-from ..storage import PublicGoogleCloudStorage
+
+from google.cloud import storage
+from django.dispatch import receiver
+from django.conf import settings
 
 
 def get_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/products/<product_id>/
-    if type(instance) == Product:
-        return '/'.join(["products", instance.id, filename])
     if type(instance) == Model:
-        return '/'.join(["products", instance.product.id, "models", filename])
+        return '/'.join(["products", str(instance.product_id), "models", filename])
     if type(instance) == Image:
-        return '/'.join(["products", instance.product.id, "images", filename])
+        return '/'.join(["products", str(instance.product_id), "images", filename])
 
 
 class Format(models.Model):
@@ -50,8 +51,7 @@ class Model(EditorBaseModel):
 
 class Image(EditorBaseModel):
     product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
-    file = models.ImageField(upload_to=get_directory_path,
-                             storage=PublicGoogleCloudStorage)
+    file = models.ImageField(upload_to=get_directory_path)
     size = models.IntegerField()
     position_id = models.IntegerField(default=1)
 
@@ -94,3 +94,14 @@ class Price(EditorBaseModel):
     product = models.ForeignKey(Product, related_name="prices", on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=10, decimal_places=4)
     is_current = models.BooleanField(default=False)
+
+
+@receiver(models.signals.post_delete, sender=Image)
+def auto_delete_file(sender, instance, **kargs):
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(settings.GS_BUCKET_NAME)
+    blob = bucket.blob(instance.file.name)
+    try:
+        blob.delete()
+    except Exception as e:
+        print(e)

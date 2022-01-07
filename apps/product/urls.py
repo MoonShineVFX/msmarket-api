@@ -12,5 +12,7 @@ urlpatterns = [
     url(r'^admin_product_create$', views.AdminProductCreate.as_view(), name='admin-product-create'),
     url(r'^admin_product_update$', views.AdminProductUpdate.as_view(), name='admin-product-update'),
     url(r'^admin_product_active$', views.AdminProductActive.as_view(), name='admin-product-active'),
+
+    url(r'^admin_image_upload$', views.AdminImageUpload.as_view(), name='admin-image-upload'),
 ]
 

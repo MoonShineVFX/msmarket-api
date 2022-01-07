@@ -19,6 +19,25 @@ class RendererSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UploadImageSerializer(serializers.ModelSerializer):
+    productId = serializers.IntegerField(source="product_id", write_only=True)
+    positionId = serializers.IntegerField(source="position_id", write_only=True)
+    file = serializers.ImageField(write_only=True)
+    imgUrl = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Image
+        fields = ('id', 'productId', 'positionId', 'file', 'imgUrl')
+
+    def create(self, validated_data):
+        upload_file = validated_data['file']
+        validated_data['size'] = upload_file.size
+        return super().create(validated_data)
+
+    def get_imgUrl(self, instance):
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.file) if instance.file else None
+
+
 class ImageUrlSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
 

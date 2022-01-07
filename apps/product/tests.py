@@ -4,10 +4,17 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
-from .models import Product, Model, Renderer, Format
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from .models import Product, Model, Renderer, Format, Image
 from ..user.models import User
 from ..category.models import Tag
 from ..order.models import Order
+
+
+def get_test_image_file():
+    return SimpleUploadedFile(name='test_image.jpg', content=open('./mysite/test.jpeg', 'rb').read(),
+                              content_type='image/jpeg')
 
 
 class ProductTest(TestCase):
@@ -185,3 +192,20 @@ class ProductTest(TestCase):
         assert product.active_at is None
         assert product.inactive_at is not None        
 
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_upload_image(self):
+        url = '/api/admin_image_upload'
+        data = {
+            'productId': 1,
+            'positionId': 1,
+            "file": get_test_image_file(),
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format='multipart')
+        print(response.data)
+        assert response.status_code == 201
+        assert "imgUrl" in response.data
+        img = Image.objects.first()
+        assert img is not None
+        assert img.size != 0
