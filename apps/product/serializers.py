@@ -55,6 +55,17 @@ class ImgUrlMixin(serializers.ModelSerializer):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.thumb_image.file) if instance.thumb_image else None
 
 
+class ActiveMixin(serializers.ModelSerializer):
+    activeTime = serializers.SerializerMethodField()
+    inactiveTime = serializers.SerializerMethodField()
+
+    def get_activeTime(self, instance):
+        return instance.active_at if instance.active_at else ""
+
+    def get_inactiveTime(self, instance):
+        return instance.inactive_at if instance.inactive_at else ""
+
+
 class ProductListSerializer(ImgUrlMixin):
     price = serializers.IntegerField()
     isActive = serializers.BooleanField(source="is_active")
@@ -121,20 +132,13 @@ class MyProductSerializer(ImgUrlMixin):
         fields = ('id', 'title', 'imgUrl', 'fileSize', 'models')
 
 
-class AdminProductListSerializer(ProductListSerializer, EditorBaseSerializer):
-    activeTime = serializers.SerializerMethodField()
-    inactiveTime = serializers.SerializerMethodField()
+class AdminProductListSerializer(ProductListSerializer, EditorBaseSerializer, ActiveMixin):
     tags = TagNameOnlySerializer(many=True)
 
     class Meta:
         model = Product
-        fields = ('id', 'title', 'imgUrl', 'price', 'isActive', 'tags', 'activeTime', 'inactiveTime')
-
-    def get_activeTime(self, instance):
-        return instance.active_at if instance.active_at else ""
-
-    def get_inactiveTime(self, instance):
-        return instance.inactive_at if instance.inactive_at else ""
+        fields = ('id', 'title', 'imgUrl', 'price', 'isActive', 'tags', 'activeTime', 'inactiveTime',
+                  "createTime", "updateTime", "creator", "updater")
 
 
 class AdminProductDetailSerializer(ProductDetailSerializer, EditorBaseSerializer):
@@ -144,7 +148,8 @@ class AdminProductDetailSerializer(ProductDetailSerializer, EditorBaseSerializer
     class Meta:
         model = Product
         fields = ('id', 'title', "description", 'price', 'imgUrl', 'modelSum', 'fileSize', 'perImgSize', 'tags',
-                  'isActive', 'webImages', 'previews')
+                  'isActive', 'webImages', 'previews',
+                  "createTime", "updateTime", "creator", "updater")
 
     def get_webImages(self, instance):
         web_images = [instance.main_image, instance.mobile_main_image, instance.thumb_image, instance.extend_image]
@@ -161,3 +166,12 @@ class AdminProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ('title', "description", 'price', 'modelSum', 'fileSize', 'perImgSize', 'tags', 'isActive')
+
+
+class AdminProductActiveSerializer(EditorBaseSerializer, ActiveMixin):
+    tags = TagNameOnlySerializer(many=True)
+
+    class Meta:
+        model = Product
+        fields = ('tags', 'activeTime', 'inactiveTime',
+                  "createTime", "updateTime", "creator", "updater")

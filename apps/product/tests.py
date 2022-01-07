@@ -104,6 +104,8 @@ class ProductTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
+        response = self.client.post(url)
+        assert response.status_code == 200
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -112,6 +114,8 @@ class ProductTest(TestCase):
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(url)
         print(response.data)
+        assert response.status_code == 200
+        response = self.client.post(url)
         assert response.status_code == 200
 
     @override_settings(DEBUG=True)
@@ -154,9 +158,11 @@ class ProductTest(TestCase):
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="json")
         assert response.status_code == 200
+        print(response.data)
 
         product = Product.objects.filter(id=2, title="new_title", price=1000, updater=self.admin).first()
         assert product is not None
+        assert product.active_at is not None
 
         tags = [tag.id for tag in product.tags.all()]
         self.assertEqual(Counter(tags), Counter([1, 2]))        

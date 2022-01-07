@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
@@ -53,6 +54,9 @@ class AdminProductList(ListAPIView):
         "creator", "updater").prefetch_related('tags').order_by(
         "active_at", "inactive_at", "updated_at", "created_at")
 
+    def post(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
 
 class AdminProductSearch(AdminProductList):
     def filter_queryset(self, queryset):
@@ -69,6 +73,9 @@ class AdminProductDetail(RetrieveAPIView):
         "main_image", "mobile_main_image", "thumb_image", "extend_image",
         "creator", "updater").prefetch_related("tags", "images")
 
+    def post(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
 
 class AdminProductCreate(WebCreateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
@@ -79,3 +86,15 @@ class AdminProductUpdate(PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
     queryset = Product
+
+    def perform_update(self, serializer):
+        data = {"updater_id": self.request.user.id, "updated_at": timezone.now()}
+
+        is_active = serializer.validated_data.get("is_active", None)
+        if is_active is not None:
+            if is_active:
+                data.update({"active_at": timezone.now()})
+            else:
+                data.update({"inactive_at": timezone.now()})
+
+        serializer.save(**data)
