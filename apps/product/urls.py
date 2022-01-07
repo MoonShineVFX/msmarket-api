@@ -8,6 +8,7 @@ urlpatterns = [
     url(r'^my_products$', views.MyProductList.as_view(), name='my-product-list'),
 
     url(r'^admin_products$', views.AdminProductList.as_view(), name='admin-product-list'),
+    url(r'^admin_product_search$', views.AdminProductSearch.as_view(), name='admin-product-search'),
     url(r'^admin_products/(?P<pk>\d+)$', views.AdminProductDetail.as_view(), name='admin-product-detail'),
     url(r'^admin_product_create$', views.AdminProductCreate.as_view(), name='admin-product-create'),
     url(r'^admin_product_update$', views.AdminProductUpdate.as_view(), name='admin-product-update'),
