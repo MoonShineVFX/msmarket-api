@@ -1,5 +1,6 @@
 from django.conf import settings
 from rest_framework.views import APIView
+from ..shortcuts import PostListView
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -100,3 +101,16 @@ class ResetPasswordView(APIView):
             user.save(update_fields=['password', 'password_changed'])
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminUserList(PostListView):
+    serializer_class = serializers.AdminUserSerializer
+    queryset = User.objects.prefetch_related("admin_profile").filter(is_staff=True)
+
+
+class AdminUserSearch(AdminUserList):
+    def filter_queryset(self, queryset):
+        query = self.request.data.get('query', None)
+        if query:
+            queryset = queryset.filter(email__icontains=query)
+        return queryset

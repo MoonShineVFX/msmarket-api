@@ -75,10 +75,19 @@ def debugger_queries(func):
 
 class PostListView(GenericAPIView):
     def get(self, request, *args, **kwargs):
-        return self.post(self, request, *args, **kwargs)
+        return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        return self.list(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(queryset, many=True)
         data = {
             "list": serializer.data,

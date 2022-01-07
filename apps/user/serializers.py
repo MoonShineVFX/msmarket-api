@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.db.models import Q
 from django.conf import settings
+from ..serializers import EditorBaseSerializer
 from rest_framework import serializers
 from .models import User
 
@@ -25,3 +26,20 @@ class RegisterCustomerSerializer(serializers.Serializer):
 
 class ForgetPasswordSerializer(serializers.Serializer):
     email = serializers.CharField(required=False)
+
+
+class AdminUserSerializer(EditorBaseSerializer):
+    isAssetAdmin = serializers.SerializerMethodField()
+    isFinanceAdmin = serializers.SerializerMethodField()
+    isSuperuser = serializers.BooleanField(source="is_superuser")
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
+                  "createTime", "updateTime")
+
+    def get_isAssetAdmin(self, instance):
+        return instance.is_asset_admin
+
+    def get_isFinanceAdmin(self, instance):
+        return instance.is_finance_admin
