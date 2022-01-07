@@ -13,15 +13,15 @@ from ..shortcuts import debugger_queries
 class IndexTest(TestCase):
     def setUp(self):
         self.client = APIClient()
-
+        self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         Tag.objects.create(id=1, name="tag01", creator=self.user)
         Tag.objects.create(id=2, name="tag02", creator=self.user)
 
-        p1 = Product.objects.create(id=1, title="product01", preview="", description="", price=Decimal(1), model_size=0,
-                                    model_count=4, texture_size=0, status=0, creator_id=1)
-        p2 = Product.objects.create(id=2, title="product02", preview="", description="", price=Decimal(1), model_size=0,
-                                    model_count=4, texture_size=0, status=0, creator_id=1)
+        p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
+                                    model_count=4, texture_size=0, creator_id=1)
+        p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
+                                    model_count=4, texture_size=0, creator_id=1)
 
         Banner.objects.create(id=1, product=p1, creator=self.user)
         Banner.objects.create(id=2, product=p2, creator=self.user)
@@ -59,6 +59,15 @@ class IndexTest(TestCase):
     @debugger_queries
     def test_tutorials(self):
         url = '/api/tutorials'
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_common(self):
+        url = '/api/admin_common'
+        self.client.force_authenticate(user=self.admin)
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200

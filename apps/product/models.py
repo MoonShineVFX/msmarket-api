@@ -61,6 +61,34 @@ class Image(EditorBaseModel):
     THUMB = 4
     EXTEND = 5
 
+    position_types = [
+        {
+            "id": 1,
+            "key": "preview",
+            "name": "商品展示組圖"
+        },
+        {
+            "id": 2,
+            "key": "main",
+            "name": "詳細頁主圖"
+        },
+        {
+            "id": 3,
+            "key": "mobileMain",
+            "name": "詳細頁主圖(手機版)"
+        },
+        {
+            "id": 4,
+            "key": "thumb",
+            "name": "商品列表頁縮圖"
+        },
+        {
+            "id": 5,
+            "key": "extend",
+            "name": "商品延伸圖(新品、你可能會喜歡)"
+        },
+    ]
+
 
 class Price(EditorBaseModel):
     product = models.ForeignKey(Product, related_name="prices", on_delete=models.CASCADE)

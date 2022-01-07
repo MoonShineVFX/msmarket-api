@@ -42,6 +42,12 @@ class WebImageSerializer(ImageUrlSerializer):
         return instance.file.__str__().rsplit('/', 1)[1] if instance.file else None
 
 
+class ImagePositionTypeSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    key = serializers.CharField()
+    name = serializers.CharField()
+
+
 class PreviewSerializer(WebImageSerializer):
     class Meta:
         model = Image

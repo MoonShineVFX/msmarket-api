@@ -2,13 +2,14 @@ from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from .models import Banner, Tutorial, AboutUs
-from ..product.models import Product
+from ..product.models import Product, Image
 from ..category.models import Tag
 
 from ..category.serializers import TagNameOnlySerializer
-from ..product.serializers import ProductListSerializer
+from ..product.serializers import ProductListSerializer, ImagePositionTypeSerializer
 from . import serializers
 
 
@@ -21,6 +22,22 @@ class CommonView(APIView):
             "userId": request.user.id if request.user.is_authenticated else None,
             "userName": request.user.name if request.user.is_authenticated else None,
             "tags": TagNameOnlySerializer(tags, many=True).data,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class AdminCommonView(APIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def post(self, request):
+        tags = Tag.objects.all()
+
+        data = {
+            "userId": request.user.id if request.user.is_authenticated else None,
+            "userName": request.user.name if request.user.is_authenticated else None,
+            "tags": TagNameOnlySerializer(tags, many=True).data,
+            "imagePosition": ImagePositionTypeSerializer(Image.position_types, many=True).data
         }
 
         return Response(data, status=status.HTTP_200_OK)
