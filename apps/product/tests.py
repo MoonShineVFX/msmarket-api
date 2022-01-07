@@ -165,5 +165,23 @@ class ProductTest(TestCase):
         assert product.active_at is not None
 
         tags = [tag.id for tag in product.tags.all()]
-        self.assertEqual(Counter(tags), Counter([1, 2]))        
+        self.assertEqual(Counter(tags), Counter([1, 2]))
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_product_active(self):
+        url = '/api/admin_product_active'
+        data = {
+            "id": 2,
+            "isActive": False
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 200
+        print(response.data)
+
+        product = Product.objects.filter(id=2, is_active=False, updater_id=self.admin.id).first()
+        assert product is not None
+        assert product.active_at is None
+        assert product.inactive_at is not None        
 

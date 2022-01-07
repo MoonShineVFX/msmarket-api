@@ -169,9 +169,10 @@ class AdminProductCreateSerializer(serializers.ModelSerializer):
 
 
 class AdminProductActiveSerializer(EditorBaseSerializer, ActiveMixin):
-    tags = TagNameOnlySerializer(many=True)
+    isActive = serializers.BooleanField(source="is_active", allow_null=None, write_only=True)
+    tags = TagNameOnlySerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
-        fields = ('tags', 'activeTime', 'inactiveTime',
+        fields = ('isActive', 'tags', 'activeTime', 'inactiveTime',
                   "createTime", "updateTime", "creator", "updater")
