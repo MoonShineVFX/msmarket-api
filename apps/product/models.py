@@ -1,6 +1,7 @@
 from django.db import models
 from apps.user.models import EditorBaseModel
 from apps.category.models import Tag
+from ..storage import PublicGoogleCloudStorage
 
 from google.cloud import storage
 from django.dispatch import receiver
@@ -51,7 +52,7 @@ class Model(EditorBaseModel):
 
 class Image(EditorBaseModel):
     product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
-    file = models.ImageField(upload_to=get_directory_path)
+    file = models.ImageField(upload_to=get_directory_path, storage=PublicGoogleCloudStorage)
     size = models.IntegerField()
     position_id = models.IntegerField(default=1)
 
@@ -99,7 +100,7 @@ class Price(EditorBaseModel):
 @receiver(models.signals.post_delete, sender=Image)
 def auto_delete_file(sender, instance, **kargs):
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(settings.GS_BUCKET_NAME)
+    bucket = storage_client.get_bucket(settings.GS_PUBLIC_BUCKET_NAME)
     blob = bucket.blob(instance.file.name)
     try:
         blob.delete()
