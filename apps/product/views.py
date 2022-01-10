@@ -17,10 +17,12 @@ class ProductList(ListAPIView):
     queryset = Product.objects.prefetch_related('tags').all()
 
     def filter_queryset(self, queryset):
+        """
         category_key = self.request.query_params.get('type', 'all')
         if category_key != "all" and category_key in category:
-            queryset = queryset.filter(status=category_key_2_id.get(category_key))
+            queryset = queryset.filter(category=category_key_2_id.get(category_key))
 
+        """
         tag_ids = self.request.query_params.get('tags', None)
         if tag_ids:
             tag_list = tag_ids.split(",")
