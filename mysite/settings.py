@@ -227,6 +227,7 @@ DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 GS_BUCKET_NAME = 'ms-image-storage'
 GS_PUBLIC_BUCKET_NAME = 'ms-image-storage'
+GS_FILE_OVERWRITE = False
 
 if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
