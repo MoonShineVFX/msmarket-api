@@ -46,13 +46,13 @@ class Model(EditorBaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="models")
     format = models.ForeignKey(Format, on_delete=models.CASCADE)
     renderer = models.ForeignKey(Renderer, on_delete=models.CASCADE)
-    file = models.FileField(upload_to=get_directory_path)
+    file = models.CharField(max_length=100)
     size = models.IntegerField()
 
 
 class Image(EditorBaseModel):
     product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
-    file = models.ImageField(upload_to=get_directory_path, storage=PublicGoogleCloudStorage)
+    file = models.ImageField(upload_to=get_directory_path)
     size = models.IntegerField()
     position_id = models.IntegerField(default=1)
 
@@ -61,6 +61,13 @@ class Image(EditorBaseModel):
     MOBILE_MAIN = 3
     THUMB = 4
     EXTEND = 5
+
+    position_2_field = {
+        2: "main_image",
+        3: "mobile_main_image",
+        4: "thumb_image",
+        5: "extend_image",
+    }
 
     position_types = [
         {

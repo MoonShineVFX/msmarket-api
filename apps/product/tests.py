@@ -203,7 +203,7 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_admin_upload_image(self):
+    def test_admin_upload_image_as_preview(self):
         url = '/api/admin_image_upload'
         data = {
             'productId': 1,
@@ -214,10 +214,29 @@ class ProductTest(TestCase):
         response = self.client.post(url, data=data, format='multipart')
         print(response.data)
         assert response.status_code == 201
-        assert "imgUrl" in response.data
+        assert "url" in response.data
         img = Image.objects.first()
         assert img is not None
         assert img.size != 0
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_upload_image_as_main(self):
+        url = '/api/admin_image_upload'
+        data = {
+            'productId': 1,
+            'positionId': 2,
+            "file": get_test_image_file(),
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format='multipart')
+        print(response.data)
+        assert response.status_code == 201
+        assert "url" in response.data
+        img = Image.objects.first()
+        assert img is not None
+        assert img.size != 0
+        assert Product.objects.filter(id=1, main_image_id=img.id).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries

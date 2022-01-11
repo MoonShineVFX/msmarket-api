@@ -34,7 +34,13 @@ class UploadImageSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         upload_file = validated_data['file']
         validated_data['size'] = upload_file.size
-        return super().create(validated_data)
+        image = super().create(validated_data)
+
+        position_id = validated_data['position_id']
+        if position_id in Image.position_2_field:
+            Product.objects.filter(
+                id=validated_data['product_id']).update(**{Image.position_2_field[position_id]: image.id})
+        return image
 
     def get_url(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.file) if instance.file else None
@@ -192,7 +198,6 @@ class AdminProductCreateSerializer(serializers.ModelSerializer):
     fileSize = serializers.IntegerField(source="model_size", read_only=True)
     perImgSize = serializers.CharField(source="texture_size")
     isActive = serializers.BooleanField(source="is_active")
-
 
     class Meta:
         model = Product
