@@ -233,7 +233,7 @@ if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # url path for image on gcp
-IMAGE_ROOT = 'https://storage.googleapis.com/ms-image-storage'
+IMAGE_ROOT = 'https://market-dev.moonshine.tw'
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True
