@@ -4,6 +4,9 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
+
+from unittest.mock import MagicMock
+from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from .models import Product, Model, Renderer, Format, Image
@@ -15,6 +18,12 @@ from ..order.models import Order
 def get_test_image_file():
     return SimpleUploadedFile(name='test_image.jpg', content=open('./mysite/test.jpeg', 'rb').read(),
                               content_type='image/jpeg')
+
+
+def get_upload_file(filename="test", file_type=".zip"):
+    file_mock = MagicMock(spec=File, name='FileMock')
+    file_mock.name = '{}{}'.format(filename, file_type)
+    return file_mock
 
 
 class ProductTest(TestCase):
@@ -209,3 +218,16 @@ class ProductTest(TestCase):
         img = Image.objects.first()
         assert img is not None
         assert img.size != 0
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_image_delete(self):
+        Image.objects.create(id=1, product_id=1, file=get_upload_file(file_type='.jpg'))
+        url = '/api/admin_image_delete'
+        data = {
+            'id': 1,
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format='json')
+        print(response.data)
+        assert response.status_code == 200

@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView
+from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView
 from .models import Product, Model, Image
 from ..order.models import Order
 from ..category.models import category, category_key_2_id
@@ -117,4 +117,8 @@ class AdminProductActive(AdminProductUpdate):
 
 class AdminImageUpload(PostCreateView):
     serializer_class = serializers.UploadImageSerializer
+    queryset = Image.objects.all()
+
+
+class AdminImageDelete(PostDestroyView):
     queryset = Image.objects.all()

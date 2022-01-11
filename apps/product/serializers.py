@@ -21,21 +21,26 @@ class RendererSerializer(serializers.ModelSerializer):
 
 class UploadImageSerializer(serializers.ModelSerializer):
     productId = serializers.IntegerField(source="product_id", write_only=True)
-    positionId = serializers.IntegerField(source="position_id", write_only=True)
+    positionId = serializers.IntegerField(source="position_id")
     file = serializers.ImageField(write_only=True)
-    imgUrl = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = Image
-        fields = ('id', 'productId', 'positionId', 'file', 'imgUrl')
+        fields = ("id", "productId", 'positionId', "url", "name", "size", "file")
+        read_only_fields = ["id", "size"]
 
     def create(self, validated_data):
         upload_file = validated_data['file']
         validated_data['size'] = upload_file.size
         return super().create(validated_data)
 
-    def get_imgUrl(self, instance):
+    def get_url(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.file) if instance.file else None
+
+    def get_name(self, instance):
+        return instance.file.__str__().rsplit('/', 1)[1] if instance.file else None
 
 
 class ImageUrlSerializer(serializers.ModelSerializer):
@@ -145,7 +150,7 @@ class ProductDetailSerializer(ImgUrlMixin):
 
     def get_previews(self, instance):
         previews = [image for image in instance.images.all() if image.position_id == Image.PREVIEW]
-        return PreviewSerializer(previews, many=True).data
+        return WebImageSerializer(previews, many=True).data
 
 
 class MyProductSerializer(ImgUrlMixin):
