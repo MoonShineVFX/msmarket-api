@@ -1,6 +1,7 @@
 from django.conf import settings
+from django.utils import timezone
 from rest_framework.views import APIView
-from ..shortcuts import PostListView
+from ..shortcuts import PostListView, PostCreateView, PostUpdateView
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -114,3 +115,19 @@ class AdminUserSearch(AdminUserList):
         if query:
             queryset = queryset.filter(email__icontains=query)
         return queryset
+
+
+class AdminUserCreate(PostCreateView):
+    serializer_class = serializers.AdminUserCreateSerializer
+    queryset = User.objects.prefetch_related("admin_profile").filter(is_staff=True)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class AdminUserUpdate(PostUpdateView):
+    serializer_class = serializers.AdminUserUpdateSerializer
+    queryset = User.objects.prefetch_related("admin_profile").filter(is_staff=True)
+
+    def perform_update(self, serializer):
+        serializer.save(**{"updated_at": timezone.now()})
