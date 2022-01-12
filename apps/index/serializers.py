@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from django.conf import settings
 from ..product.serializers import ProductListSerializer
+from ..user.serializers import EditorBaseSerializer
 from .models import Product, Tutorial, AboutUs
 
 
@@ -23,6 +24,15 @@ class AboutUsSerializer(serializers.ModelSerializer):
 
     def get_imgUrl(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
+
+
+class AdminAboutUsSerializer(AboutUsSerializer, EditorBaseSerializer):
+    file = serializers.ImageField(write_only=True, source="image")
+
+    class Meta:
+        model = AboutUs
+        fields = ('title', 'description', 'imgUrl', 'file', 'supportModels', 'supportFormats', 'supportRenders',
+                  "createTime", "updateTime", "creator", "updater")
 
 
 class TutorialSerializer(serializers.ModelSerializer):

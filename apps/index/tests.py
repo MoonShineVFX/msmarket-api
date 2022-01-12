@@ -5,6 +5,7 @@ from ..category.models import Tag
 from ..user.models import User
 from ..product.models import Product
 from .models import Banner, Tutorial, AboutUs
+from ..product.tests import get_test_image_file
 
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
@@ -69,5 +70,31 @@ class IndexTest(TestCase):
         url = '/api/admin_common'
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_about_us(self):
+        url = '/api/admin_about_us'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_about_us_update(self):
+        url = '/api/admin_about_us_update'
+        data = {
+            "title": "標題",
+            "description": "描述",
+            "file": get_test_image_file(),
+            "supportModels": 3,
+            "supportFormats": 15,
+            "supportRenders": 50,
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
         print(response.data)
         assert response.status_code == 200

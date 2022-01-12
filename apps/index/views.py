@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
+from ..shortcuts import PostUpdateView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -79,3 +80,21 @@ class TutorialListView(GenericAPIView):
             "list": serializer.data,
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+class AdminAboutUsView(RetrieveAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminAboutUsSerializer
+
+    def get_object(self):
+        return AboutUs.objects.select_related("creator", "updater").first()
+
+    def post(self, request, *args, **kwargs):
+        return self.get(self, request, *args, **kwargs)
+
+
+class AdminAboutUsUpdate(PostUpdateView):
+    serializer_class = serializers.AdminAboutUsSerializer
+
+    def get_object(self):
+        return AboutUs.objects.select_related("creator", "updater").first()
