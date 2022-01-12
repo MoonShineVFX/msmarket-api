@@ -31,6 +31,17 @@ class UploadImageSerializer(serializers.ModelSerializer):
         fields = ("id", "productId", 'positionId', "url", "name", "size", "file")
         read_only_fields = ["id", "size"]
 
+    def validate(self, data):
+        """
+        判斷product同位置是否已機有圖片
+        """
+        position_id = data['position_id']
+        if position_id in Image.position_2_field:
+            if Product.objects.filter(id=data['product_id']
+                                      ).exclude(**{Image.position_2_field[position_id]+"_id": None}).exists():
+                raise serializers.ValidationError("Image at the position of the product already exists")
+        return data
+
     def create(self, validated_data):
         upload_file = validated_data['file']
         validated_data['size'] = upload_file.size
@@ -86,9 +97,11 @@ class PreviewSerializer(WebImageSerializer):
 
 class ImgUrlMixin(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField()
+    img_field = "thumb_image"
 
     def get_imgUrl(self, instance):
-        return "{}/{}".format(settings.IMAGE_ROOT, instance.thumb_image.file) if instance.thumb_image else None
+        image = getattr(instance, self.img_field)
+        return "{}/{}".format(settings.IMAGE_ROOT, image.file) if instance.thumb_image else None
 
 
 class ActiveMixin(serializers.ModelSerializer):
@@ -144,6 +157,8 @@ class ProductDetailSerializer(ImgUrlMixin):
     models = ModelSerializer(many=True)
     previews = serializers.SerializerMethodField()
     relativeProducts = serializers.SerializerMethodField()
+
+    img_field = "main_image"
 
     class Meta:
         model = Product

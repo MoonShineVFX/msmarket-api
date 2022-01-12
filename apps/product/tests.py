@@ -240,8 +240,25 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_admin_upload_image_as_main_again(self):
+        Image.objects.create(id=1, product_id=1, file=get_upload_file(file_type='.jpg'), position_id=2, creator_id=1, size=0)
+        Product.objects.filter(id=1).update(main_image_id=1)
+
+        url = '/api/admin_image_upload'
+        data = {
+            'productId': 1,
+            'positionId': 2,
+            "file": get_test_image_file(),
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format='multipart')
+        print(response.data)
+        assert response.status_code == 400
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_admin_image_delete(self):
-        Image.objects.create(id=1, product_id=1, file=get_upload_file(file_type='.jpg'))
+        Image.objects.create(id=1, product_id=1, file=get_upload_file(file_type='.jpg'), position_id=2, creator_id=1, size=0)
         url = '/api/admin_image_delete'
         data = {
             'id': 1,
