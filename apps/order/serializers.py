@@ -17,7 +17,7 @@ class CartProductListSerializer(serializers.ModelSerializer):
         fields = ('id', 'productId', 'title', 'imgUrl', 'price')
 
     def get_imgUrl(self, instance):
-        return "{}/{}".format(settings.IMAGE_ROOT, instance.product.preview) if instance.product.preview else None
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.product.thumb_image) if instance.product.thumb_image else None
 
     def get_title(self, instance):
         return instance.product.title
@@ -40,11 +40,13 @@ class NewebpayResponseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class NewebpayPaymentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = NewebpayPayment
-        fields = '__all__'
+class NewebpayPaymentSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=4)
+    trade_no = serializers.CharField(max_length=20)
+    payment_type = serializers.CharField(max_length=10)
+    pay_time = serializers.DateTimeField()
+    ip = serializers.CharField(max_length=15)
+    escrow_bank = serializers.CharField(max_length=10, allow_null=True)
 
 
 class OrderSerializer(serializers.ModelSerializer):

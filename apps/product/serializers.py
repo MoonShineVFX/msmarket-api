@@ -95,13 +95,20 @@ class PreviewSerializer(WebImageSerializer):
         fields = ('id', 'url', "name", "size")
 
 
-class ImgUrlMixin(serializers.ModelSerializer):
+class ListImgUrlMixin(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField()
-    img_field = "thumb_image"
 
     def get_imgUrl(self, instance):
-        image = getattr(instance, self.img_field)
-        return "{}/{}".format(settings.IMAGE_ROOT, image.file) if instance.thumb_image else None
+        image = getattr(instance, "thumb_image", None)
+        return "{}/{}".format(settings.IMAGE_ROOT, image.file) if image else None
+
+
+class DetailImgUrlMixin(serializers.ModelSerializer):
+    imgUrl = serializers.SerializerMethodField()
+
+    def get_imgUrl(self, instance):
+        image = getattr(instance, "main_image", None)
+        return "{}/{}".format(settings.IMAGE_ROOT, image.file) if image else None
 
 
 class ActiveMixin(serializers.ModelSerializer):
@@ -115,7 +122,7 @@ class ActiveMixin(serializers.ModelSerializer):
         return instance.inactive_at if instance.inactive_at else ""
 
 
-class ProductListSerializer(ImgUrlMixin):
+class ProductListSerializer(ListImgUrlMixin):
     price = serializers.IntegerField()
     isActive = serializers.BooleanField(source="is_active")
 
@@ -147,7 +154,7 @@ class ModelSerializer(serializers.ModelSerializer):
         return instance.renderer.name
 
 
-class ProductDetailSerializer(ImgUrlMixin):
+class ProductDetailSerializer(DetailImgUrlMixin):
     price = serializers.IntegerField()
     modelSum = serializers.IntegerField(source="model_count")
     fileSize = serializers.IntegerField(source="model_size")
@@ -157,8 +164,6 @@ class ProductDetailSerializer(ImgUrlMixin):
     models = ModelSerializer(many=True)
     previews = serializers.SerializerMethodField()
     relativeProducts = serializers.SerializerMethodField()
-
-    img_field = "main_image"
 
     class Meta:
         model = Product
@@ -174,7 +179,7 @@ class ProductDetailSerializer(ImgUrlMixin):
         return WebImageSerializer(previews, many=True).data
 
 
-class MyProductSerializer(ImgUrlMixin):
+class MyProductSerializer(ListImgUrlMixin):
     fileSize = serializers.IntegerField(source="model_size")
     models = ModelSerializer(many=True)
 

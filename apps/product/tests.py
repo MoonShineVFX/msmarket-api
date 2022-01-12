@@ -71,9 +71,12 @@ class ProductTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_get_product_detail(self):
+        Image.objects.create(id=1, product_id=1, file=get_upload_file(file_type='.jpg'), position_id=2, creator_id=1, size=0)
+        Product.objects.filter(id=1).update(main_image_id=1)
         url = '/api/products/1'
         response = self.client.get(url)
         print(response.data)
+        assert response.data["imgUrl"] is not None
         assert response.status_code == 200
 
     @override_settings(DEBUG=True)
