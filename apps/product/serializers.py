@@ -105,9 +105,13 @@ class ListImgUrlMixin(serializers.ModelSerializer):
 
 class DetailImgUrlMixin(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField()
-
+    thumb = serializers.SerializerMethodField()
     def get_imgUrl(self, instance):
         image = getattr(instance, "main_image", None)
+        return "{}/{}".format(settings.IMAGE_ROOT, image.file) if image else None
+
+    def get_thumb(self, instance):
+        image = getattr(instance, "thumb_image", None)
         return "{}/{}".format(settings.IMAGE_ROOT, image.file) if image else None
 
 
@@ -167,7 +171,7 @@ class ProductDetailSerializer(DetailImgUrlMixin):
 
     class Meta:
         model = Product
-        fields = ('id', 'title', "description", 'price', 'imgUrl', 'modelSum', 'fileSize', 'perImgSize', 'tags',
+        fields = ('id', 'title', "description", 'price', 'imgUrl', 'thumb', 'modelSum', 'fileSize', 'perImgSize', 'tags',
                   'models', 'previews', 'relativeProducts')
 
     def get_relativeProducts(self, instance):
