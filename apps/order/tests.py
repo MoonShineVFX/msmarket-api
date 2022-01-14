@@ -135,9 +135,12 @@ class OrderTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        assert NewebpayResponse.objects.filter(MerchantID="MerchantID", is_decrypted=True).exists()
-        assert NewebpayPayment.objects.filter(order_id=order.id, payment_type="CREDIT", amount=100).exists()
-        assert Order.objects.filter(id=order.id, status=Order.SUCCESS, paid_by="CREDIT").exists()
+        newebpay_response = NewebpayResponse.objects.get(
+            order_id=order.id, MerchantID="MerchantID", is_decrypted=True)
+        newebpay_payment = NewebpayPayment.objects.get(
+            order_id=order.id, payment_type="CREDIT", amount=100, encrypted_data_id=newebpay_response.id)
+        assert Order.objects.filter(
+            id=order.id, status=Order.SUCCESS, paid_by="CREDIT", success_payment_id=newebpay_payment.id).exists()
 
     @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
     @mock.patch('apps.order.views.hash_key', test_hash_key)
@@ -158,8 +161,8 @@ class OrderTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        assert NewebpayResponse.objects.filter(MerchantID="MerchantID", is_decrypted=True).exists()
-        assert not NewebpayPayment.objects.filter(order_id=order.id).exists()
+        assert NewebpayResponse.objects.filter(order_id=order.id, MerchantID="MerchantID", is_decrypted=True).exists()
+        assert NewebpayPayment.objects.filter(order_id=order.id).exists()
         assert Order.objects.filter(id=order.id, status=Order.UNPAID).exists()
 
     @override_settings(DEBUG=True)

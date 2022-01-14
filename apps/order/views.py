@@ -228,26 +228,40 @@ class NewebpayPaymentNotify(CreateAPIView):
         elif NewebpayResponse.objects.filter(created_at__date=today, TradeSha=trade_sha).exists():
             error = "NewebpayResponse already exists"
         else:
-            result, is_decrypted = self.decrypt_trade_info(encrypted_trade_info=trade_info)
+            decrypt_trade_info, is_decrypted = self.decrypt_trade_info(encrypted_trade_info=trade_info)
+            result = decrypt_trade_info["Result"]
             merchant_order_no = result.get("MerchantOrderNo", None)
             order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
 
+            # 紀錄 Newebpay response
             encrypted_data = serializer.save(**{
                 "is_decrypted": is_decrypted,
                 "order_id": order.id if order else None
             })
 
-            # 交易成功
-            if trade_status == "SUCCESS":
-                payment_serializer = serializers.NewebpayPaymentSerializer(data=result)
-                if order is not None and payment_serializer.is_valid():
-                    payment = payment_serializer.save(**{"order_id": order.id, "encrypted_data_id": encrypted_data.id})
+            # 解碼並存成 payment
+            payment = None
+            payment_serializer = serializers.NewebpayPaymentSerializer(data=result)
 
-                    Order.objects.filter(id=order.id).update(**{
-                        "status": Order.SUCCESS,
+            if payment_serializer.is_valid():
+                payment = payment_serializer.save(**{
+                    "status": decrypt_trade_info["Status"],
+                    "message": decrypt_trade_info["Message"],
+                    "order_id": order.id if order else None,
+                    "encrypted_data_id": encrypted_data.id
+                })
+
+            # 交易成功時，更新 order
+            if trade_status == "SUCCESS":
+                order_update = {"status": Order.SUCCESS}
+
+                if payment:
+                    order_update.update({
                         "paid_at": payment.pay_time,
                         "paid_by": payment.payment_type,
+                        "success_payment": payment.id
                     })
+                Order.objects.filter(id=order.id).update(**order_update)
 
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
@@ -256,7 +270,7 @@ class NewebpayPaymentNotify(CreateAPIView):
     def decrypt_trade_info(self, encrypted_trade_info):
         decrypted_trade_info = newepay_cipher.decrypt(enc=encrypted_trade_info)
         if "Status" in decrypted_trade_info:
-            result = decrypted_trade_info["Result"]
+            result = decrypted_trade_info
             return result, True
         else:
             return None, False
