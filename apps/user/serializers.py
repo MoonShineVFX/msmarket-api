@@ -78,8 +78,10 @@ class AdminUserUpdateSerializer(AdminUserSerializer):
         is_asset_admin = validated_data.pop('is_asset_admin', False)
         is_finance_admin = validated_data.pop('is_finance_admin', False)
 
-        AdminProfile.objects.filter(user_id=instance.id).update(
-            is_asset_admin=is_asset_admin, is_finance_admin=is_finance_admin)
+        instance.admin_profile.is_asset_admin = is_asset_admin
+        instance.admin_profile.is_finance_admin = is_finance_admin
+        instance.admin_profile.save()
+
         return super().update(instance, validated_data)
 
 
