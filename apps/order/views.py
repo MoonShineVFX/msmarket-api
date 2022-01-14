@@ -309,7 +309,10 @@ class CartProductRemove(PostDestroyView):
         self.perform_destroy(instance)
         carts = Cart.objects.filter(user=self.request.user)
         serializer = serializers.CartProductListSerializer(carts, many=True)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        data = {
+            "list": serializer.data,
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
 
 
 class TestEZPay(APIView):
