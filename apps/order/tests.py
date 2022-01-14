@@ -398,8 +398,7 @@ class OrderTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com",
-                                   is_customer=True).first()
+        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").first()
         assert user is not None
         assert Cart.objects.filter(product_id=1, session_key=session.session_key, user=user).exists()
 
