@@ -1,7 +1,7 @@
 from django.utils import timezone
 import requests
 from decimal import Decimal
-
+from django.db import transaction
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView, GenericAPIView
@@ -35,23 +35,26 @@ today = timezone.now().date()
 
 
 class AESCipher:
-    def __init__(self, key=hash_key, iv=hash_iv, block_size=32):
+    def __init__(self, key, iv, block_size=32):
         self.key = key.encode('utf8mb4')
         self.iv = iv.encode('utf8mb4')
         self.block_size = block_size
+        self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
 
     def encrypt(self, raw):
         if type(raw) == str:
             raw = raw.encode('utf8mb4')
-        encryption_cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        encrypted_text = encryption_cipher.encrypt(pad(raw, AES.block_size))
+        encrypted_text = self.cipher.encrypt(pad(raw, AES.block_size))
         return hexlify(encrypted_text)
 
     def decrypt(self, enc):
         enc = codecs.decode(enc, "hex")
-        decipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        plaintext = unpad(decipher.decrypt(enc), AES.block_size)
-        return plaintext.decode('utf8mb4')
+        plaintext = unpad(self.cipher.decrypt(enc), AES.block_size)
+        return eval(plaintext.decode('utf8mb4'))
+
+
+newepay_cipher = AESCipher(key=hash_key, iv=hash_iv)
+ezpay_cipher = AESCipher(key=settings.EZPAY_HASHKEY, iv=settings.EZPAY_HASHIV)
 
 
 def encrypt_with_SHA256(data=None):
@@ -97,6 +100,7 @@ class OrderCreate(APIView):
         }
         return urlencode(trade_info_dict)
 
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         cart_ids = self.request.data.get('cartIds', [])
         carts = get_list_or_404(Cart.objects.select_related("product"), id__in=cart_ids, user=request.user)
@@ -121,7 +125,7 @@ class OrderCreate(APIView):
         Cart.objects.filter(id__in=cart_ids, user=request.user).delete()
 
         trade_info = self.get_trade_info_query_string(order=order)
-        encrypted_trade_info = AESCipher().encrypt(raw=trade_info)
+        encrypted_trade_info = newepay_cipher.encrypt(raw=trade_info)
         trade_sha = add_keyIV_and_encrypt_with_SHA256(data=encrypted_trade_info)
 
         payment_request_data = {
@@ -154,7 +158,7 @@ class OrderList(GenericAPIView):
 
 class OrderDetail(GenericAPIView):
     permission_classes = (IsAuthenticated, )
-    serializer_class = serializers.OrderSerializer
+    serializer_class = serializers.OrderDetailSerializer
     queryset = Order.objects.prefetch_related("products")
 
     def get(self, request, order_number, *args, **kwargs):
@@ -217,16 +221,45 @@ class NewebpayPaymentNotify(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         trade_info = serializer.validated_data["TradeInfo"]
         trade_sha = serializer.validated_data["TradeSha"]
+        trade_status = serializer.validated_data["Status"]
 
-        if (add_keyIV_and_encrypt_with_SHA256(trade_info) == trade_sha
-                and not NewebpayResponse.objects.filter(created_at__date=today, TradeSha=trade_sha).exists()):
-            self.perform_create(serializer)
+        if add_keyIV_and_encrypt_with_SHA256(trade_info) != trade_sha:
+            error = "Wrong trade_sha"
+        elif NewebpayResponse.objects.filter(created_at__date=today, TradeSha=trade_sha).exists():
+            error = "NewebpayResponse already exists"
+        else:
+            result, is_decrypted = self.decrypt_trade_info(encrypted_trade_info=trade_info)
+            merchant_order_no = result.get("MerchantOrderNo", None)
+            order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
+
+            encrypted_data = serializer.save(**{
+                "is_decrypted": is_decrypted,
+                "order_id": order.id if order else None
+            })
+
+            # 交易成功
+            if trade_status == "SUCCESS":
+                payment_serializer = serializers.NewebpayPaymentSerializer(data=result)
+                if order is not None and payment_serializer.is_valid():
+                    payment = payment_serializer.save(**{"order_id": order.id, "encrypted_data_id": encrypted_data.id})
+
+                    Order.objects.filter(id=order.id).update(**{
+                        "status": Order.SUCCESS,
+                        "paid_at": payment.pay_time,
+                        "paid_by": payment.payment_type,
+                    })
 
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+        return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
     def decrypt_trade_info(self, encrypted_trade_info):
-        decrypted_trade_info = AESCipher().decrypt(enc=encrypted_trade_info)
+        decrypted_trade_info = newepay_cipher.decrypt(enc=encrypted_trade_info)
+        if "Status" in decrypted_trade_info:
+            result = decrypted_trade_info["Result"]
+            return result, True
+        else:
+            return None, False
 
 
 class CartProductList(GenericAPIView):
@@ -271,10 +304,12 @@ class CartProductRemove(PostDestroyView):
     def get_object(self):
         return get_object_or_404(Cart, product_id=self.request.data.get('productId', None), user=self.request.user)
 
-    def destroy(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response(status=status.HTTP_200_OK)
+        carts = Cart.objects.filter(user=self.request.user)
+        serializer = serializers.CartProductListSerializer(carts, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class TestEZPay(APIView):
@@ -325,8 +360,7 @@ class TestEZPay(APIView):
         order = get_object_or_404(Order, id=order_id)
 
         post_data = self.get_post_data(order)
-        aes = AESCipher(key=settings.EZPAY_HASHKEY, iv=settings.EZPAY_HASHIV)
-        encrypted_post_data = aes.encrypt(raw=post_data)
+        encrypted_post_data = ezpay_cipher.encrypt(raw=post_data)
 
         data = {
             "MerchantID_": settings.EZPAY_ID,

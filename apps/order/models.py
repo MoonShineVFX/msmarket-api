@@ -46,21 +46,21 @@ class Order(models.Model):
 
 
 class NewebpayResponse(models.Model):
+    order = models.ForeignKey(Order, null=True, related_name="newebpay_responses", on_delete=models.PROTECT)
     Status = models.CharField(max_length=10)
     MerchantID = models.CharField(max_length=20)
     TradeInfo = models.TextField()
     TradeSha = models.TextField()
     Version = models.CharField(max_length=5)
-
+    is_decrypted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class NewebpayPayment(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.PROTECT)
-
+    order = models.ForeignKey(Order, related_name="newebpay_payments", on_delete=models.PROTECT)
+    encrypted_data = models.OneToOneField(NewebpayResponse, related_name="decrypted_payment", on_delete=models.PROTECT)
     status = models.CharField(max_length=10)
     message = models.CharField(max_length=50)
-
     amount = models.DecimalField(max_digits=10, decimal_places=4)
     trade_no = models.CharField(max_length=20)
     payment_type = models.CharField(max_length=10)

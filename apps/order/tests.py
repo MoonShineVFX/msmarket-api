@@ -1,4 +1,4 @@
-import json
+from unittest import mock
 from collections import OrderedDict, Counter
 from django.utils import timezone
 from decimal import Decimal
@@ -6,12 +6,15 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.test.utils import override_settings, settings
 from ..shortcuts import debugger_queries
-from .models import Order, Cart, NewebpayResponse
+from .models import Order, Cart, NewebpayResponse, NewebpayPayment
 from ..product.models import Product
 from ..user.models import User
 
 from .views import add_keyIV_and_encrypt_with_SHA256, AESCipher, encrypt_with_SHA256
 from urllib.parse import urlencode
+
+test_hash_key = 'eb0HEQAJFJyevSKM5zSP9F7jwPhTA5Bz'
+test_hash_iv = 'CXTiuqCetQm232OP'
 
 
 class OrderTest(TestCase):
@@ -101,16 +104,63 @@ class OrderTest(TestCase):
 
     def test_decrypt_TradeInfo(self):
         ciphertext = "c6f1fdd8595c20ba221ad3eb2e19d5aae4e50f96f99b4e271aff2f2839bafb70a372819b90dec91f1d9e9980499d657150237e99fe6bd3d40e74742ddb578191d7e1cd8cabf06a8d951d7eb59d75342aa2e4e592924f9e9c98765d866e8433fd71c7f75faa9344e232cef4fc234a8fd09a2fee72170452305d2390a6a0f1d7c817a337bf90d21b22f6f98d21750e3f63f31c1c13f3bad65ff6788ecb2ada43150462bded77ee74e870ee5d91e7ee943b97abfc26ab39983cc69d01ce827ad65fa4f6a87edc58f6ac5f3eb3470d17925365120a1b90e577f37ba2fd88786c8c34883aa9d79eb5d294fa8f45b0db809d053d5f9b09754df05e3f8ad58398c11232b9afd58b0d5287d68490457f25a8064d640f096f5fe4bbfd84a25d136bbd8e2789379c7db89ba7e380f807bdf17553b52cdd47cd9eb758f58feb0922721fa1bf05e96401dd88d12a79dc7c9ebdcc0b157b532b666bed08790daf8741eaad12d9c00087bc6349c968b8830d4d40bdeed52e3bb1bc6e86ebab14ba99b7e84d90d56dc97c014465b40970ff97e40839da2061e645a3f2d6fe4cdee829b46095992cbfcebc1f4e2cd533c1e915a063a38eea600e3c4d2a5f6ba0b5af4042f52fe25a5cac049674762aff60d9d9cc196ddbca3f746697f69ffd554071d06a85e9e14b"
-        c = AESCipher()
+        c = AESCipher(key=test_hash_key, iv=test_hash_iv)
         result = c.decrypt(enc=ciphertext)
-        print(result)
-        assert result == {"Status": "SUCCESS", "Message": "\u6388\u6b0a\u6210\u529f",
+
+        expect = {"Status": "SUCCESS", "Message": "\u6388\u6b0a\u6210\u529f",
                           "Result": {"MerchantID": "MS326698321", "Amt": 100, "TradeNo": "21122717471292431",
                                      "MerchantOrderNo": "MSM20211227000013", "RespondType": "JSON",
                                      "IP": "203.69.143.113", "EscrowBank": "HNCB", "PaymentType": "CREDIT",
                                      "RespondCode": "00", "Auth": "025171", "Card6No": "400022", "Card4No": "1111",
                                      "Exp": "2703", "TokenUseStatus": "0", "InstFirst": 0, "InstEach": 0, "Inst": 0,
                                      "ECI": "", "PayTime": "2021-12-27 17:47:12", "PaymentMethod": "CREDIT"}}
+        self.assertEqual(result["Result"], expect["Result"])
+
+    @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
+    @mock.patch('apps.order.views.hash_key', test_hash_key)
+    @mock.patch('apps.order.views.hash_iv', test_hash_iv)
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_newebpay_payment_notify_success(self):
+        order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000)
+
+        url = '/api/newebpay_payment_notify'
+        data = {
+            "Status": "SUCCESS",
+            "MerchantID": "MerchantID",
+            "TradeInfo": "c6f1fdd8595c20ba221ad3eb2e19d5aae4e50f96f99b4e271aff2f2839bafb70a372819b90dec91f1d9e9980499d657150237e99fe6bd3d40e74742ddb578191d7e1cd8cabf06a8d951d7eb59d75342aa2e4e592924f9e9c98765d866e8433fd71c7f75faa9344e232cef4fc234a8fd09a2fee72170452305d2390a6a0f1d7c817a337bf90d21b22f6f98d21750e3f63f31c1c13f3bad65ff6788ecb2ada43150462bded77ee74e870ee5d91e7ee943b97abfc26ab39983cc69d01ce827ad65fa4f6a87edc58f6ac5f3eb3470d17925365120a1b90e577f37ba2fd88786c8c34883aa9d79eb5d294fa8f45b0db809d053d5f9b09754df05e3f8ad58398c11232b9afd58b0d5287d68490457f25a8064d640f096f5fe4bbfd84a25d136bbd8e2789379c7db89ba7e380f807bdf17553b52cdd47cd9eb758f58feb0922721fa1bf05e96401dd88d12a79dc7c9ebdcc0b157b532b666bed08790daf8741eaad12d9c00087bc6349c968b8830d4d40bdeed52e3bb1bc6e86ebab14ba99b7e84d90d56dc97c014465b40970ff97e40839da2061e645a3f2d6fe4cdee829b46095992cbfcebc1f4e2cd533c1e915a063a38eea600e3c4d2a5f6ba0b5af4042f52fe25a5cac049674762aff60d9d9cc196ddbca3f746697f69ffd554071d06a85e9e14b",
+            "TradeSha": "FF915DC66673057BC7B94804A4E5A23C1829CC0EEBB52D46ADC70E0FE1AFD01C",
+            "Version": "1.6"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        assert NewebpayResponse.objects.filter(MerchantID="MerchantID", is_decrypted=True).exists()
+        assert NewebpayPayment.objects.filter(order_id=order.id, payment_type="CREDIT", amount=100).exists()
+        assert Order.objects.filter(id=order.id, status=Order.SUCCESS, paid_by="CREDIT").exists()
+
+    @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
+    @mock.patch('apps.order.views.hash_key', test_hash_key)
+    @mock.patch('apps.order.views.hash_iv', test_hash_iv)
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_newebpay_payment_notify_fail(self):
+        order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000)
+
+        url = '/api/newebpay_payment_notify'
+        data = {
+            "Status": "MPG01001",
+            "MerchantID": "MerchantID",
+            "TradeInfo": "c6f1fdd8595c20ba221ad3eb2e19d5aae4e50f96f99b4e271aff2f2839bafb70a372819b90dec91f1d9e9980499d657150237e99fe6bd3d40e74742ddb578191d7e1cd8cabf06a8d951d7eb59d75342aa2e4e592924f9e9c98765d866e8433fd71c7f75faa9344e232cef4fc234a8fd09a2fee72170452305d2390a6a0f1d7c817a337bf90d21b22f6f98d21750e3f63f31c1c13f3bad65ff6788ecb2ada43150462bded77ee74e870ee5d91e7ee943b97abfc26ab39983cc69d01ce827ad65fa4f6a87edc58f6ac5f3eb3470d17925365120a1b90e577f37ba2fd88786c8c34883aa9d79eb5d294fa8f45b0db809d053d5f9b09754df05e3f8ad58398c11232b9afd58b0d5287d68490457f25a8064d640f096f5fe4bbfd84a25d136bbd8e2789379c7db89ba7e380f807bdf17553b52cdd47cd9eb758f58feb0922721fa1bf05e96401dd88d12a79dc7c9ebdcc0b157b532b666bed08790daf8741eaad12d9c00087bc6349c968b8830d4d40bdeed52e3bb1bc6e86ebab14ba99b7e84d90d56dc97c014465b40970ff97e40839da2061e645a3f2d6fe4cdee829b46095992cbfcebc1f4e2cd533c1e915a063a38eea600e3c4d2a5f6ba0b5af4042f52fe25a5cac049674762aff60d9d9cc196ddbca3f746697f69ffd554071d06a85e9e14b",
+            "TradeSha": "FF915DC66673057BC7B94804A4E5A23C1829CC0EEBB52D46ADC70E0FE1AFD01C",
+            "Version": "1.6"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        assert NewebpayResponse.objects.filter(MerchantID="MerchantID", is_decrypted=True).exists()
+        assert not NewebpayPayment.objects.filter(order_id=order.id).exists()
+        assert Order.objects.filter(id=order.id, status=Order.UNPAID).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -226,22 +276,6 @@ class OrderTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         assert response.status_code == 200
         print(response.data)
-
-    @override_settings(DEBUG=True)
-    @debugger_queries
-    def test_newebpay_payment_notify(self):
-        url = '/api/newebpay_payment_notify'
-        data = {
-            "Status": "SUCCESS",
-            "MerchantID": "MerchantID",
-            "TradeInfo": "TradeInfo",
-            "TradeSha": "TradeSha",
-            "Version": "1.6"
-        }
-        response = self.client.post(url, data=data, format="json")
-        print(response.data)
-        assert response.status_code == 201
-        assert NewebpayResponse.objects.filter(MerchantID="MerchantID").exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -373,6 +407,7 @@ class OrderTest(TestCase):
     @debugger_queries
     def test_cart_product_remove_with_login(self):
         Cart.objects.create(id=1, user_id=1, product_id=1)
+        Cart.objects.create(id=2, user_id=1, product_id=2)
 
         url = '/api/cart_product_remove'
         data = {
