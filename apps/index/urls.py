@@ -8,6 +8,6 @@ urlpatterns = [
     url(r'^tutorials$', views.TutorialListView.as_view(), name='tutorial-list'),
 
     url(r'^admin_common$', views.AdminCommonView.as_view(), name='admin-common'),
-    url(r'^admin_about_us$', views.AdminAboutUsView.as_view(), name='admin-about-us'),
-    url(r'^admin_about_us_update$', views.AdminAboutUsUpdate.as_view(), name='admin-about-us'),
+    url(r'^admin_about$', views.AdminAboutUsView.as_view(), name='admin-about'),
+    url(r'^admin_about_update$', views.AdminAboutUsUpdate.as_view(), name='admin-about-update'),
 ]

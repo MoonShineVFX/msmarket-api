@@ -76,7 +76,7 @@ class IndexTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_admin_about_us(self):
-        url = '/api/admin_about_us'
+        url = '/api/admin_about'
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url)
         print(response.data)
@@ -85,7 +85,7 @@ class IndexTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_admin_about_us_update(self):
-        url = '/api/admin_about_us_update'
+        url = '/api/admin_about_update'
         data = {
             "title": "標題",
             "description": "描述",

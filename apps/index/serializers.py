@@ -7,9 +7,14 @@ from .models import Product, Tutorial, AboutUs
 
 
 class BannerProductSerializer(ProductListSerializer):
+    status = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = ('id', 'title', 'description', 'imgUrl', 'price', 'status')
+
+    def get_status(self, instance):
+        return ""
 
 
 class AboutUsSerializer(serializers.ModelSerializer):
