@@ -45,6 +45,28 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_my_account(self):
+        url = '/api/my_account'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_account_update(self):
+        url = '/api/account_update'
+        self.client.force_authenticate(user=self.user)
+        data = {
+            "nickname": "new",
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        assert User.objects.filter(id=self.user.id, nick_name="new").exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_admin_accounts(self):
         url = '/api/admin_accounts'
         self.client.force_authenticate(user=self.admin)

@@ -28,6 +28,15 @@ class ForgetPasswordSerializer(serializers.Serializer):
     email = serializers.CharField(required=False)
 
 
+class CustomerSerializer(serializers.ModelSerializer):
+    nickname = serializers.CharField(source="nick_name")
+
+    class Meta:
+        model = User
+        fields = ('nickname', 'email')
+        read_only_fields = ['email']
+
+
 class AdminUserSerializer(EditorBaseSerializer):
     isAssetAdmin = serializers.BooleanField(source="is_asset_admin")
     isFinanceAdmin = serializers.BooleanField(source="is_finance_admin")

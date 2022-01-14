@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.utils import timezone
 from rest_framework.views import APIView
-from ..shortcuts import PostListView, PostCreateView, PostUpdateView
+from rest_framework.generics import RetrieveAPIView
+from ..shortcuts import PostListView, PostCreateView, PostUpdateView, WebUpdateView
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -73,6 +74,25 @@ class GuestLogin(APIView):
         if serializer.is_valid():
             serializer.save()
         return Response(status=status.HTTP_200_OK)
+
+
+class CustomerAccountDetailView(RetrieveAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = serializers.CustomerSerializer
+
+    def post(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def get_object(self):
+        return self.request.user
+
+
+class CustomerAccountUpdateView(WebUpdateView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = serializers.CustomerSerializer
+
+    def get_object(self):
+        return self.request.user
 
 
 class ForgetPasswordView(APIView):
