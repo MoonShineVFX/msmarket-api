@@ -81,3 +81,8 @@ class AdminUserUpdateSerializer(AdminUserSerializer):
         AdminProfile.objects.filter(user_id=instance.id).update(
             is_asset_admin=is_asset_admin, is_finance_admin=is_finance_admin)
         return super().update(instance, validated_data)
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    password = serializers.CharField()
+    newPassword = serializers.CharField()

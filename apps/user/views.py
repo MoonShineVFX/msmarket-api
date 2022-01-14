@@ -5,7 +5,7 @@ from ..shortcuts import PostListView, PostCreateView, PostUpdateView
 from rest_framework.response import Response
 from rest_framework import status
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -101,6 +101,23 @@ class ResetPasswordView(APIView):
             user.password_changed = None
             user.save(update_fields=['password', 'password_changed'])
             return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminChangePasswordView(APIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def post(self, request):
+        serializer = serializers.ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            old_password = serializer.validated_data["password"]
+            new_password = serializer.validated_data["newPassword"]
+            user = request.user
+            if user.check_password(old_password):
+                user.set_password(new_password)
+                user.password_updated_at = timezone.now()
+                user.save(update_fields=['password', 'password_updated_at'])
+            return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 

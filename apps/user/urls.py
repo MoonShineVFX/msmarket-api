@@ -12,4 +12,5 @@ urlpatterns = [
     url(r'admin_account_search$', views.AdminUserSearch.as_view(), name='admin-account-search'),
     url(r'admin_account_create$', views.AdminUserCreate.as_view(), name='admin-account-create'),
     url(r'admin_account_update$', views.AdminUserUpdate.as_view(), name='admin-account-update'),
+    url(r'admin_change_password$', views.AdminChangePasswordView.as_view(), name='admin-change-password'),
 ]

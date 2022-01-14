@@ -13,6 +13,9 @@ class UserTest(TestCase):
         self.admin_2 = User.objects.create(id=3, name="admin2", email="admin2@mail.com", is_staff=True, is_superuser=True)
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
 
+        self.admin.set_password("password")
+        self.admin.save()
+
         AdminProfile.objects.create(id=1, user_id=2)
         AdminProfile.objects.create(id=2, user_id=3)
 
@@ -124,3 +127,19 @@ class UserTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_change_password(self):
+        url = '/api/admin_change_password'
+        self.client.force_authenticate(user=self.admin)
+        data = {
+            "password": "password",
+            "newPassword": "new_password",
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        admin = User.objects.get(id=self.admin.id)
+        assert admin.password_updated_at is not None
+        assert admin.check_password("new_password")
