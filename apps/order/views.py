@@ -94,7 +94,7 @@ class OrderCreate(APIView):
             "CREDIT": 1,
             "VACC": 1,
             # 即時付款完成後，以 form post 方式要導回的頁面
-            # "ReturnURL": "",
+            "ReturnURL": "https://{}/payment_result?no={}".format(settings.API_HOST, order.merchant_order_no),
             # 訂單完成後，以背景 post 回報訂單狀況
             "NotifyURL": "https://{}/api/newebpay_payment_notify".format(settings.API_HOST),
         }
@@ -261,7 +261,9 @@ class NewebpayPaymentNotify(CreateAPIView):
                         "paid_by": payment.payment_type,
                         "success_payment": payment.id
                     })
-                Order.objects.filter(id=order.id).update(**order_update)
+            else:
+                order_update = {"status": Order.FAIL}
+            Order.objects.filter(id=order.id).update(**order_update)
 
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
