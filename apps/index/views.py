@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
-from ..shortcuts import PostUpdateView
+from ..shortcuts import PostListView, PostCreateView, PostUpdateView, PostDestroyView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -98,3 +98,31 @@ class AdminAboutUsUpdate(PostUpdateView):
 
     def get_object(self):
         return AboutUs.objects.select_related("creator", "updater").first()
+
+
+class AdminTutorialListView(PostListView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminTutorialCreateSerializer
+    queryset = Tutorial.objects.select_related("creator", "updater")
+
+
+class AdminTutorialCreateView(PostCreateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminTutorialCreateSerializer
+
+
+class AdminTutorialUpdateView(PostUpdateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminTutorialCreateSerializer
+    queryset = Tutorial.objects.select_related("creator", "updater")
+    
+
+class AdminBannerCreateView(PostCreateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminBannerCreateSerializer
+
+
+class AdminBannerUpdateView(PostUpdateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminBannerCreateSerializer
+    queryset = Banner.objects.select_related("creator", "updater")

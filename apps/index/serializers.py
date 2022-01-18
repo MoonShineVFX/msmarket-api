@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.conf import settings
 from ..product.serializers import ProductListSerializer
 from ..user.serializers import EditorBaseSerializer
-from .models import Product, Tutorial, AboutUs
+from .models import Product, Tutorial, AboutUs, Banner
 
 
 class BannerProductSerializer(ProductListSerializer):
@@ -56,3 +56,32 @@ class TutorialLinkSerializer(TutorialSerializer):
         model = Tutorial
         fields = ('id', 'title', 'link', 'imgUrl')
 
+
+class AdminTutorialCreateSerializer(TutorialSerializer, EditorBaseSerializer):
+    file = serializers.ImageField(write_only=True, source="image")
+
+    class Meta:
+        model = Tutorial
+        fields = ('id', 'title', 'file', 'link', 'imgUrl',
+                  "createTime", "updateTime", "creator", "updater")
+
+
+class AdminBannerSerializer(EditorBaseSerializer):
+    imgUrl = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Banner
+        fields = ('id', 'title', 'description', 'imgUrl', 'link',
+                  "createTime", "updateTime", "creator", "updater")
+
+    def get_imgUrl(self, instance):
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
+
+
+class AdminBannerCreateSerializer(AdminBannerSerializer):
+    file = serializers.ImageField(write_only=True, source="image")
+
+    class Meta:
+        model = Banner
+        fields = ('id', 'title', 'file', 'link', 'imgUrl',
+                  "createTime", "updateTime", "creator", "updater")

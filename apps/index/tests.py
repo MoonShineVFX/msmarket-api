@@ -24,8 +24,8 @@ class IndexTest(TestCase):
         p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, creator_id=1)
 
-        Banner.objects.create(id=1, product=p1, creator=self.user)
-        Banner.objects.create(id=2, product=p2, creator=self.user)
+        Banner.objects.create(id=1, title="banner01", creator=self.user)
+        Banner.objects.create(id=2, title="banner02", creator=self.user)
 
         AboutUs.objects.create(id=1, title="AboutUs", description="description", creator=self.user
                                )
@@ -98,3 +98,92 @@ class IndexTest(TestCase):
         response = self.client.post(url, data=data, format="multipart")
         print(response.data)
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_tutorial_create(self):
+        url = '/api/admin_tutorial_create'
+        data = {
+            "title": "標題",
+            "file": get_test_image_file(),
+            "link": "https://www.facebook.com",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 201
+        assert Tutorial.objects.filter(title="標題", link="https://www.facebook.com", creator_id=self.admin.id).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_tutorials(self):
+        url = '/api/admin_tutorials'
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_tutorial_create(self):
+        url = '/api/admin_tutorial_create'
+        data = {
+            "title": "標題",
+            "file": get_test_image_file(),
+            "link": "https://www.facebook.com",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 201
+        assert Tutorial.objects.filter(title="標題", link="https://www.facebook.com", creator_id=self.admin.id).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_tutorial_update(self):
+        url = '/api/admin_tutorial_update'
+        data = {
+            "id": 1,
+            "title": "新標題",
+            "file": get_test_image_file(),
+            "link": "https://www.facebook.com",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 200
+        assert Tutorial.objects.filter(
+            id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id).exists()
+        
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_banner_create(self):
+        url = '/api/admin_banner_create'
+        data = {
+            "title": "標題",
+            "file": get_test_image_file(),
+            "link": "https://www.facebook.com",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 201
+        assert Banner.objects.filter(title="標題", link="https://www.facebook.com", creator_id=self.admin.id).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_banner_update(self):
+        url = '/api/admin_banner_update'
+        data = {
+            "id": 1,
+            "title": "新標題",
+            "file": get_test_image_file(),
+            "link": "https://www.facebook.com",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 200
+        assert Banner.objects.filter(
+            id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id).exists()

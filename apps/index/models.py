@@ -8,7 +8,10 @@ from django.conf import settings
 
 
 class Banner(CreatorBaseModel):
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    title = models.CharField(max_length=200)
+    image = models.ImageField(null=True, upload_to='static-storage/index/banners')
+    description = models.TextField(null=True, default="")
+    link = models.URLField(null=True)
 
 
 class Tutorial(EditorBaseModel):
@@ -38,6 +41,8 @@ def auto_delete_file(sender, instance, **kargs):
         print(e)
 
 
+@receiver(models.signals.pre_save, sender=Banner)
+@receiver(models.signals.pre_save, sender=Tutorial)
 @receiver(models.signals.pre_save, sender=AboutUs)
 def auto_delete_file_on_change(sender, instance, **kwargs):
     """
