@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 class ProductList(ListAPIView):
     pagination_class = ProductPagination
     serializer_class = serializers.ProductListSerializer
-    queryset = Product.objects.prefetch_related('tags').all()
+    queryset = Product.objects.prefetch_related('tags').filter(is_active=True)
 
     def filter_queryset(self, queryset):
         """
@@ -34,7 +34,7 @@ class ProductList(ListAPIView):
 class ProductDetail(RetrieveAPIView):
     serializer_class = serializers.ProductDetailSerializer
     models = Model.objects.select_related("format", "renderer")
-    queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))
+    queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models)).filter(is_active=True)
 
 
 class MyProductList(PostListView):

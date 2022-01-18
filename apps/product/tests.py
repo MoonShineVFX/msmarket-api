@@ -59,6 +59,15 @@ class ProductTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
+        assert len(response.data["products"]) == 2
+
+    def test_get_product_list_inactive(self):
+        Product.objects.filter(id=1).update(is_active=False)
+        url = '/api/products'
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200
+        assert len(response.data["products"]) == 1
 
     @override_settings(DEBUG=True)
     @debugger_queries
