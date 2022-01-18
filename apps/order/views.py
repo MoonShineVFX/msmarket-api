@@ -94,7 +94,7 @@ class OrderCreate(APIView):
             "CREDIT": 1,
             "VACC": 1,
             # 即時付款完成後，以 form post 方式要導回的頁面
-            "ReturnURL": "https://{}/payment_result?no={}".format(settings.API_HOST, order.merchant_order_no),
+            #"ReturnURL": "https://{}/payment_result?no={}".format(settings.API_HOST, order.merchant_order_no),
             # 訂單完成後，以背景 post 回報訂單狀況
             "NotifyURL": "https://{}/api/newebpay_payment_notify".format(settings.API_HOST),
         }
