@@ -6,15 +6,15 @@ from ..user.serializers import EditorBaseSerializer
 from .models import Product, Tutorial, AboutUs, Banner
 
 
-class BannerProductSerializer(ProductListSerializer):
-    status = serializers.SerializerMethodField()
+class IndexBannerSerializer(ProductListSerializer):
+    imgUrl = serializers.SerializerMethodField()
 
     class Meta:
-        model = Product
-        fields = ('id', 'title', 'description', 'imgUrl', 'price', 'status')
+        model = Banner
+        fields = ('id', 'title', 'description', 'imgUrl', 'link')
 
-    def get_status(self, instance):
-        return ""
+    def get_imgUrl(self, instance):
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
 
 
 class AboutUsSerializer(serializers.ModelSerializer):
@@ -66,16 +66,12 @@ class AdminTutorialCreateSerializer(TutorialSerializer, EditorBaseSerializer):
                   "createTime", "updateTime", "creator", "updater")
 
 
-class AdminBannerSerializer(EditorBaseSerializer):
-    imgUrl = serializers.SerializerMethodField()
+class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer):
 
     class Meta:
         model = Banner
         fields = ('id', 'title', 'description', 'imgUrl', 'link',
                   "createTime", "updateTime", "creator", "updater")
-
-    def get_imgUrl(self, instance):
-        return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
 
 
 class AdminBannerCreateSerializer(AdminBannerSerializer):

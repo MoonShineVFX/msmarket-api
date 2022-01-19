@@ -155,7 +155,17 @@ class IndexTest(TestCase):
         assert response.status_code == 200
         assert Tutorial.objects.filter(
             id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id).exists()
-        
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_banners(self):
+        url = '/api/admin_banners'
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_admin_banner_create(self):

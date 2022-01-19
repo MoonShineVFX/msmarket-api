@@ -46,12 +46,12 @@ class AdminCommonView(APIView):
 
 class IndexView(APIView):
     def post(self, request):
-        banner_products = [banner.product for banner in Banner.objects.select_related("product").all()]
+        banners = Banner.objects.all()
         new_products = Product.objects.order_by("-id")[:4]
         tutorials = Tutorial.objects.order_by("-id")[:3]
 
         data = {
-            "banners": serializers.BannerProductSerializer(banner_products, many=True).data,
+            "banners": serializers.IndexBannerSerializer(banners, many=True).data,
             "newArrivals": ProductListSerializer(new_products, many=True).data,
             "tutorials": serializers.TutorialSerializer(tutorials, many=True).data,
         }
@@ -115,7 +115,13 @@ class AdminTutorialUpdateView(PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
     queryset = Tutorial.objects.select_related("creator", "updater")
-    
+
+
+class AdminBannerListView(PostListView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminBannerSerializer
+    queryset = Banner.objects.select_related("creator", "updater")
+
 
 class AdminBannerCreateView(PostCreateView):
     permission_classes = (IsAuthenticated, IsAdminUser)

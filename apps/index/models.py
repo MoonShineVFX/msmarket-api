@@ -7,7 +7,7 @@ from django.dispatch import receiver
 from django.conf import settings
 
 
-class Banner(CreatorBaseModel):
+class Banner(EditorBaseModel):
     title = models.CharField(max_length=200)
     image = models.ImageField(null=True, upload_to='static-storage/index/banners')
     description = models.TextField(null=True, default="")

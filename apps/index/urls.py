@@ -14,4 +14,8 @@ urlpatterns = [
     url(r'^admin_tutorials$', views.AdminTutorialListView.as_view(), name='admin-tutorial-list'),
     url(r'^admin_tutorial_create$', views.AdminTutorialCreateView.as_view(), name='admin-tutorial-create'),
     url(r'^admin_tutorial_update$', views.AdminTutorialUpdateView.as_view(), name='admin-tutorial-update'),
+
+    url(r'^admin_banners$', views.AdminBannerListView.as_view(), name='admin-banner-list'),
+    url(r'^admin_banner_create$', views.AdminBannerCreateView.as_view(), name='admin-banner-create'),
+    url(r'^admin_banner_update$', views.AdminBannerUpdateView.as_view(), name='admin-banner-update'),
 ]
