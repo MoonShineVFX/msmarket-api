@@ -1,3 +1,4 @@
+import json
 from django.utils import timezone
 import requests
 from decimal import Decimal
@@ -35,22 +36,23 @@ today = timezone.now().date()
 
 
 class AESCipher:
-    def __init__(self, key, iv, block_size=32):
+    def __init__(self, key=hash_key, iv=hash_iv, block_size=32):
         self.key = key.encode('utf8mb4')
         self.iv = iv.encode('utf8mb4')
         self.block_size = block_size
-        self.cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
 
     def encrypt(self, raw):
         if type(raw) == str:
             raw = raw.encode('utf8mb4')
-        encrypted_text = self.cipher.encrypt(pad(raw, AES.block_size))
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        encrypted_text = cipher.encrypt(pad(raw, AES.block_size))
         return hexlify(encrypted_text)
 
     def decrypt(self, enc):
         enc = codecs.decode(enc, "hex")
-        plaintext = unpad(self.cipher.decrypt(enc), AES.block_size)
-        return eval(plaintext.decode('utf8mb4'))
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        plaintext = unpad(cipher.decrypt(enc), AES.block_size)
+        return plaintext.decode('utf8mb4')
 
 
 newepay_cipher = AESCipher(key=hash_key, iv=hash_iv)
@@ -213,10 +215,10 @@ class AdminOrderDetail(OrderDetail):
     queryset = Order.objects.select_related("user").prefetch_related("products")
 
 
-class NewebpayPaymentNotify(CreateAPIView):
+class NewebpayPaymentNotify(GenericAPIView):
     serializer_class = serializers.NewebpayResponseSerializer
 
-    def create(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         trade_info = serializer.validated_data["TradeInfo"]
@@ -225,25 +227,27 @@ class NewebpayPaymentNotify(CreateAPIView):
 
         if add_keyIV_and_encrypt_with_SHA256(trade_info) != trade_sha:
             error = "Wrong trade_sha"
-        elif NewebpayResponse.objects.filter(created_at__date=today, TradeSha=trade_sha).exists():
+        elif NewebpayResponse.objects.filter(TradeSha=trade_sha).exists():
             error = "NewebpayResponse already exists"
         else:
+            # 紀錄 Newebpay response
+            encrypted_data = serializer.save()
+
             decrypt_trade_info, is_decrypted = self.decrypt_trade_info(encrypted_trade_info=trade_info)
+
             result = decrypt_trade_info["Result"]
             merchant_order_no = result.get("MerchantOrderNo", None)
             order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
-
-            # 紀錄 Newebpay response
-            encrypted_data = serializer.save(**{
-                "is_decrypted": is_decrypted,
-                "order_id": order.id if order else None
-            })
 
             # 解碼並存成 payment
             payment = None
             payment_serializer = serializers.NewebpayPaymentSerializer(data=result)
 
             if payment_serializer.is_valid():
+                NewebpayResponse.objects.filter(id=encrypted_data.id).update(**{
+                    "is_decrypted": is_decrypted,
+                    "order_id": order.id if order else None
+                })
                 payment = payment_serializer.save(**{
                     "status": decrypt_trade_info["Status"],
                     "message": decrypt_trade_info["Message"],
@@ -265,14 +269,13 @@ class NewebpayPaymentNotify(CreateAPIView):
                 order_update = {"status": Order.FAIL}
             Order.objects.filter(id=order.id).update(**order_update)
 
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
     def decrypt_trade_info(self, encrypted_trade_info):
         decrypted_trade_info = newepay_cipher.decrypt(enc=encrypted_trade_info)
         if "Status" in decrypted_trade_info:
-            result = decrypted_trade_info
+            result = json.loads(decrypted_trade_info)
             return result, True
         else:
             return None, False
