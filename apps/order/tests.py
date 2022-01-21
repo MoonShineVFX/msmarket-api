@@ -5,13 +5,13 @@ from django.utils import timezone
 from decimal import Decimal
 from django.test import TestCase
 from rest_framework.test import APIClient
-from django.test.utils import override_settings, settings
+from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
-from .models import Order, Cart, NewebpayResponse, NewebpayPayment
+from .models import Order, Cart, NewebpayResponse, NewebpayPayment, Invoice, InvoiceError
 from ..product.models import Product
 from ..user.models import User
 
-from .views import add_keyIV_and_encrypt_with_SHA256, AESCipher, encrypt_with_SHA256
+from .views import add_keyIV_and_encrypt_with_SHA256, AESCipher, encrypt_with_SHA256, EZPayInvoiceMixin
 from urllib.parse import urlencode
 
 test_hash_key = 'eb0HEQAJFJyevSKM5zSP9F7jwPhTA5Bz'
@@ -120,6 +120,21 @@ class OrderTest(TestCase):
                                      "ECI": "", "PayTime": "2021-12-27 17:47:12", "PaymentMethod": "CREDIT"}}
         self.assertEqual(result["Result"], expect["Result"])
 
+    @mock.patch('apps.order.views.hash_key', test_hash_key)
+    @mock.patch('apps.order.views.hash_iv', test_hash_iv)
+    def test_response_TradeInfo_TradeSha_error(self):
+        data = "c23138942d393501963a0c89a5999de3ef910c1c3ba1f4aa28ef69853797bf9b5fc7ea30bb84587c4207d15feb1c250ce95175441b15873113ed121e17dbc9d78826c08aa37fbe495cb44cb6e45968ba5c13001b2c55e34fb7337de3e7be90fb9ce0278b72014f0b1cf7c831288d1e5672d51c10b7887232813079d3433e1b2c34522428ad066e96c735127183f13a60d69d03f93b51c9b75eba64a021f70f3d9ade4ba72090844e0cef45eb17b59e9b7420cb20d3da8645998ed53d2a1f483a15632d3c9c9c64ce252caacde0ac27cdb43700da1fb2b983a7c0a5ca87e2b6cd2541c3e432d26aab94f5427bc653efd30d9832a51d09266f3a8423ca70b6159c7b31a98257aa74d19ae66b5d0b35486e602382c310a954c2d409706d66c6f6864c105539a0c4811f9fe649e24f35a6a8f9cd52f6ca68722935622b3aa0c15f01b5e2528ddf460201c1c7ef98b67fabf0e42dc40bac04a117bb59dc374b5dbffbb449f86723cb374116e8e0840ed4a80e607f510e3b4d6adbc0b5a928c4a62fffc09199335f3bcad6c75e2feebae0eea0ae0b9e0895d5f96878ee3923e5ca7d7432c14113e629a838fbe915fed818381f3dca1e4d61d78308b725ba3065e680511e48edf5f083144318bc8d8b67928be7cac5f40e3e0a8a802fdb0e2309b98315"
+        result = add_keyIV_and_encrypt_with_SHA256(data)
+        print(result)
+        assert result == "B18D511BFEB27B1D86B36BFE01B79845864CDFB6AB030DD01555C6BFA4BA5EFE"
+
+    def test_decrypt_TradeInfo_error(self):
+        ciphertext = "c23138942d393501963a0c89a5999de3ef910c1c3ba1f4aa28ef69853797bf9b5fc7ea30bb84587c4207d15feb1c250ce95175441b15873113ed121e17dbc9d78826c08aa37fbe495cb44cb6e45968ba5c13001b2c55e34fb7337de3e7be90fb9ce0278b72014f0b1cf7c831288d1e5672d51c10b7887232813079d3433e1b2c34522428ad066e96c735127183f13a60d69d03f93b51c9b75eba64a021f70f3d9ade4ba72090844e0cef45eb17b59e9b7420cb20d3da8645998ed53d2a1f483a15632d3c9c9c64ce252caacde0ac27cdb43700da1fb2b983a7c0a5ca87e2b6cd2541c3e432d26aab94f5427bc653efd30d9832a51d09266f3a8423ca70b6159c7b31a98257aa74d19ae66b5d0b35486e602382c310a954c2d409706d66c6f6864c105539a0c4811f9fe649e24f35a6a8f9cd52f6ca68722935622b3aa0c15f01b5e2528ddf460201c1c7ef98b67fabf0e42dc40bac04a117bb59dc374b5dbffbb449f86723cb374116e8e0840ed4a80e607f510e3b4d6adbc0b5a928c4a62fffc09199335f3bcad6c75e2feebae0eea0ae0b9e0895d5f96878ee3923e5ca7d7432c14113e629a838fbe915fed818381f3dca1e4d61d78308b725ba3065e680511e48edf5f083144318bc8d8b67928be7cac5f40e3e0a8a802fdb0e2309b98315"
+        c = AESCipher(key=test_hash_key, iv=test_hash_iv)
+        result = c.decrypt(enc=ciphertext)
+        result = json.loads(result)
+        print(result)
+
     @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
     @mock.patch('apps.order.views.hash_key', test_hash_key)
     @mock.patch('apps.order.views.hash_iv', test_hash_iv)
@@ -168,6 +183,37 @@ class OrderTest(TestCase):
         assert NewebpayResponse.objects.filter(order_id=order.id, MerchantID="MerchantID", is_decrypted=True).exists()
         assert NewebpayPayment.objects.filter(order_id=order.id).exists()
         assert Order.objects.filter(id=order.id, status=Order.FAIL).exists()
+
+    @override_settings(EZPAY_ID="3502275")
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_ezpay_invoice_handle_response(self):
+        order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000)
+        encrypted_data = NewebpayResponse.objects.create(
+            order_id=order.id, Status="", TradeInfo="", TradeSha="", Version="",
+            MerchantID="MerchantID", is_decrypted=True)
+        payment = NewebpayPayment.objects.create(
+            encrypted_data_id=encrypted_data.id, order_id=order.id, amount=1000, pay_time=timezone.now())
+        order.success_payment = payment
+        order.save()
+
+        data = {"Status": "SUCCESS",
+                "Message": "\u96fb\u5b50\u767c\u7968\u958b\u7acb\u6210\u529f",
+                "Result": {"CheckCode": "00E108DF7DE8756AF003312206DA77A4C37AE33990EA04A944C414113D512228",
+                           "MerchantID": "3502275",
+                           "MerchantOrderNo": "MSM20211227000013",
+                           "InvoiceNumber": "DS12223139",
+                           "TotalAmt": 1000,
+                           "InvoiceTransNo": 15110317583641325,
+                           "RandomNum": 4253,
+                           "CreateTime": "2015-11-03 17:58:36",
+                           "BarCode": "10412DS122231394253",
+                           "QRcodeL": "DS12223139104110342530000014b0000015c0000000099005522KbEN94WjYK3Jzwhx4VGtAw==:**********:2:2:0:",
+                           "QRcodeR": "**\\u5546\\u54c1\\u4e00:2:99:\\u5546\\u54c1\\u4e8c:3:50"
+                           }
+                }
+        EZPayInvoiceMixin().handle_response(data=data)
+        assert Invoice.objects.filter(invoice_number="DS12223139", order_id=order.id).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries

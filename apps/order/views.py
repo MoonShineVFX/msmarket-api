@@ -12,7 +12,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-from .models import Cart, Order, NewebpayPayment, NewebpayResponse
+from .models import Cart, Order, NewebpayPayment, NewebpayResponse, Invoice, InvoiceError
 from ..product.models import Product
 from . import serializers
 
@@ -45,13 +45,13 @@ class AESCipher:
         if type(raw) == str:
             raw = raw.encode('utf8mb4')
         cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        encrypted_text = cipher.encrypt(pad(raw, AES.block_size))
+        encrypted_text = cipher.encrypt(pad(raw, self.block_size))
         return hexlify(encrypted_text)
 
     def decrypt(self, enc):
         enc = codecs.decode(enc, "hex")
         cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        plaintext = unpad(cipher.decrypt(enc), AES.block_size)
+        plaintext = unpad(cipher.decrypt(enc), self.block_size)
         return plaintext.decode('utf8mb4')
 
 
@@ -74,6 +74,77 @@ def add_keyIV_and_encrypt_with_SHA256(data=None):
     result = encrypt_with_SHA256(data)
 
     return result
+
+
+class EZPayInvoiceMixin(object):
+    api_url = "https://cinv.pay2go.com/Api/invoice_issue"
+
+    def get_post_data(self, order):
+        if len(order.products.all()) > 0:
+            item_count = ""
+            item_price = ""
+            for p in order.products.all():
+                item_count = item_count + "|1" if item_count == "" else "1"
+
+                price = p.price * Decimal("1.05")
+                item_price = item_price + "|{}".format(price) if item_price == "" else str(price)
+        else:
+            item_count = "1"
+            item_price = int(order.amount)
+
+        tax_rate = Decimal("0.05")
+        tax_amt = order.amount * tax_rate
+
+        post_data = {
+            "RespondType": "JSON",
+            "Version": "1.4",
+            "TimeStamp": int(timezone.now().timestamp()),
+            "MerchantOrderNo": order.merchant_order_no,
+            "Status": "1",
+            "Category": "B2C",  # B2B, B2C
+            "BuyerName": order.user.name,
+            "PrintFlag": "Y",
+            "TaxType": "1",
+            "TaxRate": 5,
+            "Amt": int(order.amount),  # 發票銷售額(未稅)
+            "TaxAmt": int(tax_amt),
+            "TotalAmt": int(order.amount + tax_amt),  # 發票總金額(含稅)
+            "ItemName": "夢想模型(共{}筆)".format(item_count),
+            "ItemCount": item_count,
+            "ItemUnit": "組",
+            "ItemPrice": item_price,
+            "ItemAmt": item_price,
+        }
+        return urlencode(post_data)
+
+    def call_invoice_api(self, order):
+        post_data = self.get_post_data(order)
+        encrypted_post_data = ezpay_cipher.encrypt(raw=post_data)
+
+        data = {
+            "MerchantID_": settings.EZPAY_ID,
+            "PostData_": encrypted_post_data
+        }
+        response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
+
+        return Response(response.json(), status=status.HTTP_200_OK)
+
+    def handle_response(self, data):
+        result_serializer = serializers.EZPayResponseSerializer(data=data)
+        if result_serializer.is_valid():
+            validated_data = result_serializer.validated_data
+            invoice_data = validated_data.pop('Result', None)
+            if validated_data["status"] == "SUCCESS":
+                ezpay_id = invoice_data.pop('merchant_id')
+                merchant_order_no = invoice_data.pop('merchant_order_no')
+                if ezpay_id == settings.EZPAY_ID:
+                    order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
+                    if order and order.success_payment_id:
+                        invoice_data["order_id"] = order.id if order else None
+                        invoice_data["payment_id"] = order.success_payment_id if order else None
+                        invoice = Invoice.objects.create(**invoice_data)
+            else:
+                invoice_error = InvoiceError.objects.create(**validated_data)
 
 
 class OrderCreate(APIView):
@@ -215,7 +286,7 @@ class AdminOrderDetail(OrderDetail):
     queryset = Order.objects.select_related("user").prefetch_related("products")
 
 
-class NewebpayPaymentNotify(GenericAPIView):
+class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
     serializer_class = serializers.NewebpayResponseSerializer
 
     def post(self, request, *args, **kwargs):
@@ -265,6 +336,7 @@ class NewebpayPaymentNotify(GenericAPIView):
                         "paid_by": payment.payment_type,
                         "success_payment": payment.id
                     })
+
             else:
                 order_update = {"status": Order.FAIL}
             Order.objects.filter(id=order.id).update(**order_update)
@@ -279,6 +351,27 @@ class NewebpayPaymentNotify(GenericAPIView):
             return result, True
         else:
             return None, False
+
+
+class EZPayInvoiceNotify(GenericAPIView, EZPayInvoiceMixin):
+    def post(self, request, *args, **kwargs):
+        result_serializer = serializers.EZPayResponseSerializer(data=request.data)
+        if result_serializer.is_valid():
+            validated_data = result_serializer.validated_data
+            invoice_data = validated_data.pop('Result')
+            if validated_data["status"] == "SUCCESS":
+                ezpay_id = invoice_data.pop('merchant_id')
+                merchant_order_no = invoice_data.pop('merchant_order_no')
+
+                if ezpay_id == settings.EZPAY_ID:
+                    order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
+                    invoice_data["order_id"] = order.id if order else None
+                invoice = Invoice.objects.create(**invoice_data)
+            else:
+                invoice_error = InvoiceError.objects.create(**validated_data)
+
+            return Response(result_serializer.data, status=status.HTTP_200_OK)
+        return Response(result_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CartProductList(GenericAPIView):
@@ -334,48 +427,8 @@ class CartProductRemove(PostDestroyView):
         return Response(data=data, status=status.HTTP_200_OK)
 
 
-class TestEZPay(APIView):
+class TestEZPay(APIView, EZPayInvoiceMixin):
     permission_classes = (IsAuthenticated, )
-
-    api_url = "https://cinv.pay2go.com/Api/invoice_issue"
-
-    def get_post_data(self, order):
-        if len(order.products.all()) > 0:
-            item_count = ""
-            item_price = ""
-            for p in order.products.all():
-                item_count = item_count + "|1" if item_count == "" else "1"
-
-                price = p.price * Decimal("1.05")
-                item_price = item_price + "|{}".format(price) if item_price == "" else str(price)
-        else:
-            item_count = "1"
-            item_price = int(order.amount)
-
-        tax_rate = Decimal("0.05")
-        tax_amt = order.amount * tax_rate
-
-        post_data = {
-            "RespondType": "JSON",
-            "Version": "1.4",
-            "TimeStamp": int(timezone.now().timestamp()),
-            "MerchantOrderNo": order.merchant_order_no,
-            "Status": "1",
-            "Category": "B2C",     # B2B, B2C
-            "BuyerName": order.user.name,
-            "PrintFlag": "Y",
-            "TaxType": "1",
-            "TaxRate": 5,
-            "Amt": int(order.amount),  # 發票銷售額(未稅)
-            "TaxAmt": int(tax_amt),
-            "TotalAmt": int(order.amount + tax_amt),  # 發票總金額(含稅)
-            "ItemName": "夢想模型(共{}筆)".format(item_count),
-            "ItemCount": item_count,
-            "ItemUnit": "組",
-            "ItemPrice": item_price,
-            "ItemAmt": item_price,
-        }
-        return urlencode(post_data)
 
     def post(self, request, *args, **kwargs):
         order_id = self.request.data.get('order_id', None)
@@ -390,7 +443,9 @@ class TestEZPay(APIView):
         }
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
 
-        return Response(response.json(), status=status.HTTP_200_OK)
+        self.handle_response(data=response.json)
+
+        return Response(response.json, status=status.HTTP_200_OK)
 
 
 class TestCookie(APIView):

@@ -2,7 +2,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from rest_framework import serializers
-from .models import Order, Cart, NewebpayResponse, NewebpayPayment
+from .models import Order, Cart, NewebpayResponse, NewebpayPayment, Invoice, InvoiceError
 from ..product.serializers import OrderProductSerializer
 
 
@@ -38,6 +38,31 @@ class NewebpayResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = NewebpayResponse
         fields = '__all__'
+
+
+class EZPayInvoiceSerializer(serializers.ModelSerializer):
+    MerchantID = serializers.CharField(max_length=15, source="merchant_id")
+    MerchantOrderNo = serializers.CharField(max_length=20, source="merchant_order_no")
+    InvoiceTransNo = serializers.CharField(max_length=20, source="invoice_trans_no")
+    TotalAmt = serializers.DecimalField(max_digits=10, decimal_places=4, source="total_amount")
+    InvoiceNumber = serializers.CharField(max_length=10, source="invoice_number")
+    RandomNum = serializers.CharField(max_length=4, source="random_num")
+    CheckCode = serializers.CharField(max_length=64, source="check_code")
+    CreateTime = serializers.DateTimeField(source="created_at")
+    BarCode = serializers.CharField(max_length=50, source="barcode")
+    QRcodeL = serializers.CharField(max_length=200, source="qrcode_l")
+    QRcodeR = serializers.CharField(max_length=200, source="qrcode_r")
+
+    class Meta:
+        model = Invoice
+        fields = ("MerchantID", "MerchantOrderNo", "InvoiceTransNo", "TotalAmt", "InvoiceNumber", "RandomNum",
+                  "CheckCode", "CreateTime", "BarCode", "QRcodeL", "QRcodeR")
+
+
+class EZPayResponseSerializer(serializers.Serializer):
+    Status = serializers.CharField(max_length=10, source="status")
+    Message = serializers.CharField(max_length=30, source="message")
+    Result = EZPayInvoiceSerializer(required=False, allow_null=True)
 
 
 class NewebpayPaymentSerializer(serializers.ModelSerializer):

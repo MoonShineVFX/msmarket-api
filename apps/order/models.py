@@ -84,4 +84,12 @@ class Invoice(models.Model):
     qrcode_l = models.CharField(max_length=200)
     qrcode_r = models.CharField(max_length=200)
 
+    created_at = models.DateTimeField()
+
+
+class InvoiceError(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="invoice_error")
+    status = models.CharField(max_length=10)
+    message = models.CharField(max_length=30)
+
     created_at = models.DateTimeField(auto_now_add=True)
