@@ -79,5 +79,5 @@ class AdminBannerCreateSerializer(AdminBannerSerializer):
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'file', 'link', 'imgUrl',
+        fields = ('id', 'title', 'description', 'file', 'link', 'imgUrl',
                   "createTime", "updateTime", "creator", "updater")

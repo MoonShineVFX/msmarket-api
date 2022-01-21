@@ -174,6 +174,7 @@ class IndexTest(TestCase):
             "title": "標題",
             "file": get_test_image_file(),
             "link": "https://www.facebook.com",
+            'description': "des",
         }
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="multipart")
