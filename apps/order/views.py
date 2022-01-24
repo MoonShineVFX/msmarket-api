@@ -32,8 +32,6 @@ codecs.register(lambda name: codecs.lookup('utf8') if name == 'utf8mb4' else Non
 hash_key = settings.NEWEBPAY_HASHKEY
 hash_iv = settings.NEWEBPAY_HASHIV
 
-today = timezone.now().date()
-
 
 class AESCipher:
     def __init__(self, key=hash_key, iv=hash_iv, block_size=32):
@@ -182,7 +180,7 @@ class OrderCreate(APIView):
         sum_price = sum([cart.product.price for cart in carts])
 
         # 取得流水號 "MerchantOrderNo" ex: MSM20211201000001
-        last_order = Order.objects.filter(created_at__date=today).last()
+        last_order = Order.objects.filter(created_at__date=timezone.now().date()).last()
         if last_order:
             serial_number = int(last_order.merchant_order_no[3:])
             merchant_order_no = "{}{}".format("MSM", serial_number + 1)
@@ -353,27 +351,6 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
             return None, False
 
 
-class EZPayInvoiceNotify(GenericAPIView, EZPayInvoiceMixin):
-    def post(self, request, *args, **kwargs):
-        result_serializer = serializers.EZPayResponseSerializer(data=request.data)
-        if result_serializer.is_valid():
-            validated_data = result_serializer.validated_data
-            invoice_data = validated_data.pop('Result')
-            if validated_data["status"] == "SUCCESS":
-                ezpay_id = invoice_data.pop('merchant_id')
-                merchant_order_no = invoice_data.pop('merchant_order_no')
-
-                if ezpay_id == settings.EZPAY_ID:
-                    order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
-                    invoice_data["order_id"] = order.id if order else None
-                invoice = Invoice.objects.create(**invoice_data)
-            else:
-                invoice_error = InvoiceError.objects.create(**validated_data)
-
-            return Response(result_serializer.data, status=status.HTTP_200_OK)
-        return Response(result_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class CartProductList(GenericAPIView):
     serializer_class = serializers.CartProductListSerializer
 
@@ -442,8 +419,7 @@ class TestEZPay(APIView, EZPayInvoiceMixin):
             "PostData_": encrypted_post_data
         }
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
-
-        self.handle_response(data=response.json)
+        self.handle_response(data=response.text)
 
         return Response(response.json, status=status.HTTP_200_OK)
 
