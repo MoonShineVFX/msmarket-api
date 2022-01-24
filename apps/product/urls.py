@@ -16,5 +16,7 @@ urlpatterns = [
 
     url(r'^admin_image_upload$', views.AdminImageUpload.as_view(), name='admin-image-upload'),
     url(r'^admin_image_delete$', views.AdminImageDelete.as_view(), name='admin-image-delete'),
+
+    url(r'^model_download_link$', views.ModelDownloadLink.as_view(), name='model-download-link'),
 ]
 

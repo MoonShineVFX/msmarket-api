@@ -1,11 +1,14 @@
 from django.utils import timezone
 from django.db.models import Prefetch
-from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
 from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from ..storage import get_download_link
+
 from .models import Product, Model, Image
 from ..order.models import Order
-from ..category.models import category, category_key_2_id
 from . import serializers
 from ..pagination import ProductPagination
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -122,3 +125,19 @@ class AdminImageUpload(PostCreateView):
 
 class AdminImageDelete(PostDestroyView):
     queryset = Image.objects.all()
+
+
+class ModelDownloadLink(GenericAPIView):
+    permission_classes = (IsAuthenticated, )
+
+    def user_has_product(self, user_id, product_id):
+        return Product.objects.filter(orders__user_id=user_id, id=product_id).exists()
+
+    def post(self, request, *args, **kwargs):
+        model_id = self.request.data.get('id', [])
+        model = get_object_or_404(Model, id=model_id)
+        if self.user_has_product(user_id=self.request.user.id, product_id=model.product_id):
+            url = get_download_link(file_path=model.file)
+            return Response(data={"url": url}, status=status.HTTP_200_OK)
+        return Response(data="User hasn't buy the product", status=status.HTTP_403_FORBIDDEN)
+

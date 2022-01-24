@@ -226,7 +226,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 GS_BUCKET_NAME = 'ms-image-storage'
-GS_PUBLIC_BUCKET_NAME = 'ms-image-storage'
+GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
 GS_FILE_OVERWRITE = False
 
 if 'test' in sys.argv:

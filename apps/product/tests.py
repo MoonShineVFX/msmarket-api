@@ -14,6 +14,8 @@ from ..user.models import User
 from ..category.models import Tag
 from ..order.models import Order
 
+from .views import ModelDownloadLink
+
 
 def get_test_image_file():
     return SimpleUploadedFile(name='test_image.jpg', content=open('./mysite/test.jpeg', 'rb').read(),
@@ -122,6 +124,17 @@ class ProductTest(TestCase):
              ('size', 0)])])]),
          OrderedDict([('id', 2), ('title', 'product02'), ('imgUrl', None), ('fileSize', 0), ('models', [])])]
         assert response.data['list'] == expect
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_model_download_link_user_has_product(self):
+
+        order = Order.objects.create(
+            user=self.user, status=Order.SUCCESS, merchant_order_no="MSM20211201000002", amount=1000)
+        order.products.set([1])
+
+        assert ModelDownloadLink().user_has_product(user_id=self.user.id, product_id=1)
+        assert not ModelDownloadLink().user_has_product(user_id=self.user.id, product_id=2)
 
     @override_settings(DEBUG=True)
     @debugger_queries
