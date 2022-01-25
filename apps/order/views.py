@@ -224,7 +224,7 @@ class OrderList(GenericAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        return Order.objects.filter(user=self.request.user).order_by("-created_at")
 
 
 class OrderDetail(GenericAPIView):
@@ -275,7 +275,7 @@ class AdminOrderList(OrderList):
     serializer_class = serializers.AdminOrderListSerializer
 
     def get_queryset(self):
-        return Order.objects.select_related("user").all()
+        return Order.objects.select_related("user").order_by('-created_at').all()
 
 
 class AdminOrderDetail(OrderDetail):

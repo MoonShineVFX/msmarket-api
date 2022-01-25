@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 class AdminTagList(PostListView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTagSerializer
-    queryset = Tag.objects.select_related("creator", "updater").all()
+    queryset = Tag.objects.select_related("creator", "updater").order_by("-updated_at", "-created_at").all()
 
 
 class AdminTagCreate(APIView):

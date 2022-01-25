@@ -57,7 +57,7 @@ class AdminProductList(PostListView):
     serializer_class = serializers.AdminProductListSerializer
     queryset = Product.objects.select_related(
         "creator", "updater").prefetch_related('tags').order_by(
-        "active_at", "inactive_at", "updated_at", "created_at")
+        "-active_at", "-inactive_at", "-updated_at", "-created_at")
 
 
 class AdminProductSearch(AdminProductList):

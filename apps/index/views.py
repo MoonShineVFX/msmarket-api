@@ -103,7 +103,7 @@ class AdminAboutUsUpdate(PostUpdateView):
 class AdminTutorialListView(PostListView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
-    queryset = Tutorial.objects.select_related("creator", "updater")
+    queryset = Tutorial.objects.select_related("creator", "updater").order_by("-updated_at","-created_at")
 
 
 class AdminTutorialCreateView(PostCreateView):
