@@ -218,10 +218,10 @@ class AdminProductDetailSerializer(ProductDetailSerializer, EditorBaseSerializer
 
 
 class AdminProductCreateSerializer(serializers.ModelSerializer):
-    modelSum = serializers.IntegerField(source="model_count")
-    fileSize = serializers.IntegerField(source="model_size", read_only=True)
-    perImgSize = serializers.CharField(source="texture_size")
-    isActive = serializers.BooleanField(source="is_active")
+    modelSum = serializers.IntegerField(source="model_count", required=False)
+    fileSize = serializers.IntegerField(source="model_size", required=False)
+    perImgSize = serializers.CharField(source="texture_size", required=False)
+    isActive = serializers.BooleanField(source="is_active", required=False)
 
     class Meta:
         model = Product
