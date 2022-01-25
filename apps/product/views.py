@@ -136,9 +136,9 @@ class ModelDownloadLink(GenericAPIView):
     def post(self, request, *args, **kwargs):
         product_id = self.request.data.get('productId', None)
         format_id = self.request.data.get('formatId', None)
-        render_id = self.request.data.get('renderId', None)
+        renderer_id = self.request.data.get('rendererId', None)
         if self.user_has_product(user_id=self.request.user.id, product_id=product_id):
-            model = get_object_or_404(Model, id=product_id, format_id=format_id, render_id=render_id)
+            model = get_object_or_404(Model, id=product_id, format_id=format_id, renderer_id=renderer_id)
             url = get_download_link(file_path=model.file)
             return Response(data={"url": url}, status=status.HTTP_200_OK)
         return Response(data="User hasn't buy the product", status=status.HTTP_403_FORBIDDEN)
