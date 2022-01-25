@@ -1,4 +1,5 @@
-import sys
+import json
+import base64
 import datetime as dt
 from six.moves import urllib
 from datetime import timedelta
@@ -9,18 +10,31 @@ from storages.utils import (
 
 from google import auth
 from google.cloud import storage
+from google.oauth2 import service_account
+
+
+def dict_to_base64(dict_obj):
+    message_str = json.dumps(dict_obj)
+    message_bytes = message_str.encode()
+    base64_bytes = base64.b64encode(message_bytes)
+
+    base64_message = base64_bytes.decode()
+    return base64_message
+
+
+def base64_to_dict(base64_obj):
+    b64_str = base64_obj
+    b64_str = b64_str.encode()
+    b64_bytes = base64.b64decode(b64_str)
+    decode_str = b64_bytes.decode()
+    decode_dict = json.loads(decode_str)
+    return decode_dict
 
 
 def get_download_link(file_path=None):
-    SCOPES = [
-        "https://www.googleapis.com/auth/devstorage.read_only",
-        "https://www.googleapis.com/auth/cloud-platform"
-    ]
-
-    credentials, project = auth.default(
-        scopes=SCOPES
-    )
-    credentials.refresh(auth.transport.requests.Request())
+    service_account_info = base64_to_dict(setting('MEDIA_SERVICE_ACCOUNT_SECRET'))
+    credentials = service_account.Credentials.from_service_account_info(
+        service_account_info)
     expiration_timedelta = dt.timedelta(days=7)
     bucket_name = setting('GS_INTERNAL_BUCKET_NAME')
     storage_client = storage.Client(credentials=credentials)
