@@ -47,8 +47,8 @@ class AdminCommonView(APIView):
 class IndexView(APIView):
     def post(self, request):
         banners = Banner.objects.all()
-        new_products = Product.objects.order_by("-id")[:4]
-        tutorials = Tutorial.objects.order_by("-id")[:3]
+        new_products = Product.objects.filter(is_active=True).order_by("-active_at")[:4]
+        tutorials = Tutorial.objects.order_by("-created_at")[:3]
 
         data = {
             "banners": serializers.IndexBannerSerializer(banners, many=True).data,
@@ -71,7 +71,7 @@ class AboutUsView(RetrieveAPIView):
 
 class TutorialListView(GenericAPIView):
     serializer_class = serializers.TutorialLinkSerializer
-    queryset = Tutorial.objects.all()
+    queryset = Tutorial.objects.order_by('-created_at').all()
 
     def post(self, request, *args, **kwargs):
         queryset = self.get_queryset()

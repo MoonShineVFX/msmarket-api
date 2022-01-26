@@ -17,7 +17,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 class ProductList(ListAPIView):
     pagination_class = ProductPagination
     serializer_class = serializers.ProductListSerializer
-    queryset = Product.objects.prefetch_related('tags').filter(is_active=True)
+    queryset = Product.objects.prefetch_related('tags').filter(is_active=True).order_by('-active_at')
 
     def filter_queryset(self, queryset):
         """

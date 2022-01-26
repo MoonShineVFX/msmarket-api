@@ -45,7 +45,7 @@ class TutorialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tutorial
-        fields = ('id', 'title', 'description', 'imgUrl')
+        fields = ('id', 'title', 'description', 'imgUrl', 'link')
 
     def get_imgUrl(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
