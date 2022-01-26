@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
 from ..shortcuts import PostListView, PostCreateView, PostUpdateView, WebUpdateView
@@ -14,7 +15,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 
-from .models import User
+from .models import User, AdminProfile
 from ..order.models import Cart
 from . import serializers
 
@@ -141,9 +142,14 @@ class AdminChangePasswordView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+admin_profile = AdminProfile.objects.select_related("creator", "updater")
+admin_queryset = User.objects.prefetch_related(Prefetch('admin_profile', queryset=admin_profile)).filter(is_staff=True)
+
+
 class AdminUserList(PostListView):
     serializer_class = serializers.AdminUserSerializer
-    queryset = User.objects.prefetch_related("admin_profile").filter(is_staff=True)
+    admin_profile = AdminProfile.objects.select_related("creator", "updater")
+    queryset = admin_queryset
 
 
 class AdminUserSearch(AdminUserList):
@@ -156,15 +162,9 @@ class AdminUserSearch(AdminUserList):
 
 class AdminUserCreate(PostCreateView):
     serializer_class = serializers.AdminUserCreateSerializer
-    queryset = User.objects.prefetch_related("admin_profile").filter(is_staff=True)
-
-    def perform_create(self, serializer):
-        serializer.save()
+    queryset = admin_queryset
 
 
 class AdminUserUpdate(PostUpdateView):
     serializer_class = serializers.AdminUserUpdateSerializer
-    queryset = User.objects.prefetch_related("admin_profile").filter(is_staff=True)
-
-    def perform_update(self, serializer):
-        serializer.save(**{"updated_at": timezone.now()})
+    queryset = admin_queryset

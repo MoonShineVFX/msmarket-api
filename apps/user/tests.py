@@ -16,8 +16,8 @@ class UserTest(TestCase):
         self.admin.set_password("password")
         self.admin.save()
 
-        AdminProfile.objects.create(id=1, user_id=2)
-        AdminProfile.objects.create(id=2, user_id=3)
+        AdminProfile.objects.create(id=1, user_id=2, creator_id=2)
+        AdminProfile.objects.create(id=2, user_id=3, creator_id=2)
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -33,6 +33,21 @@ class UserTest(TestCase):
         print(response.data)
         assert response.status_code == 200
         assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def _test_rest_register(self):
+        url = '/api/rest-auth/registration'
+        data = {
+            "username": "test@mail.com",
+            "email": "test@mail.com",
+            "password1": "TE$Tpa$$w0rd",
+            "password2": "TE$Tpa$$w0rd"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        assert User.objects.filter(email="test@mail.com").exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries

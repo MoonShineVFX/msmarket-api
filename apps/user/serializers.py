@@ -37,7 +37,26 @@ class CustomerSerializer(serializers.ModelSerializer):
         read_only_fields = ['email']
 
 
-class AdminUserSerializer(EditorBaseSerializer):
+class AdminEditorSerializer(serializers.ModelSerializer):
+    createTime = serializers.SerializerMethodField()
+    updateTime = serializers.SerializerMethodField()
+    creator = serializers.SerializerMethodField()
+    updater = serializers.SerializerMethodField()
+
+    def get_createTime(self, instance):
+        return instance.admin_profile.created_at if instance.admin_profile else ""
+
+    def get_updateTime(self, instance):
+        return instance.admin_profile.updated_at if instance.admin_profile else ""
+
+    def get_creator(self, instance):
+        return instance.admin_profile.creator.username if instance.admin_profile and instance.admin_profile.creator else ""
+
+    def get_updater(self, instance):
+        return instance.admin_profile.updater.username if instance.admin_profile and instance.admin_profile.updater else ""
+
+
+class AdminUserSerializer(AdminEditorSerializer):
     isAssetAdmin = serializers.BooleanField(source="is_asset_admin")
     isFinanceAdmin = serializers.BooleanField(source="is_finance_admin")
     isSuperuser = serializers.BooleanField(source="is_superuser")
@@ -45,7 +64,7 @@ class AdminUserSerializer(EditorBaseSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
-                  "createTime", "updateTime")
+                  "creator", "updater", "createTime", "updateTime")
 
     def get_isAssetAdmin(self, instance):
         return instance.is_asset_admin
@@ -60,19 +79,21 @@ class AdminUserCreateSerializer(AdminUserSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'password', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
-                  "createTime", "updateTime")
+                  "creator", "updater", "createTime", "updateTime")
         read_only_fields = ['id', "createTime", "updateTime"]
 
     def create(self, validated_data):
         is_asset_admin = validated_data.pop('is_asset_admin', False)
         is_finance_admin = validated_data.pop('is_finance_admin', False)
+        creator_id = validated_data.pop('creator_id')
         password = validated_data.pop("password")
         validated_data["is_staff"] = True
 
         user = User(**validated_data)
         user.set_password(raw_password=password)
         user.save()
-        AdminProfile.objects.create(user=user, is_asset_admin=is_asset_admin, is_finance_admin=is_finance_admin)
+        AdminProfile.objects.create(
+            user=user, is_asset_admin=is_asset_admin, is_finance_admin=is_finance_admin, creator_id=creator_id)
         return user
 
 
@@ -80,15 +101,18 @@ class AdminUserUpdateSerializer(AdminUserSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
-                      "createTime", "updateTime")
-        read_only_fields = ['id', 'email', "createTime", "updateTime"]
+                      "creator", "updater", "createTime", "updateTime")
+        read_only_fields = ['id', 'email']
 
     def update(self, instance, validated_data):
         is_asset_admin = validated_data.pop('is_asset_admin', False)
         is_finance_admin = validated_data.pop('is_finance_admin', False)
+        updater_id = validated_data.pop('updater_id')
 
         instance.admin_profile.is_asset_admin = is_asset_admin
         instance.admin_profile.is_finance_admin = is_finance_admin
+        instance.admin_profile.updater_id = updater_id
+        instance.admin_profile.updated_at = validated_data["updated_at"]
         instance.admin_profile.save()
 
         return super().update(instance, validated_data)

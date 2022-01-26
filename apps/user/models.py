@@ -51,12 +51,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             return False
 
 
-class AdminProfile(models.Model):
-    user = models.OneToOneField(User, related_name="admin_profile", on_delete=models.CASCADE)
-    is_asset_admin = models.BooleanField(default=False)
-    is_finance_admin = models.BooleanField(default=False)
-
-
 class EditorBaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(null=True)
@@ -87,3 +81,9 @@ class CreatorBaseModel(models.Model):
         abstract = True
 
     objects = models.Manager()
+
+
+class AdminProfile(EditorBaseModel):
+    user = models.OneToOneField(User, related_name="admin_profile", on_delete=models.CASCADE)
+    is_asset_admin = models.BooleanField(default=False)
+    is_finance_admin = models.BooleanField(default=False)
