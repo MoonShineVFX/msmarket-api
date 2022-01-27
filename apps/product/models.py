@@ -28,7 +28,7 @@ class Product(EditorBaseModel):
     title = models.CharField(max_length=200)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=4)
-    model_size = models.IntegerField(default=0)
+    model_size = models.BigIntegerField(default=0)
     model_count = models.IntegerField(default=0)
     texture_size = models.CharField(max_length=20, null=True)
     tags = models.ManyToManyField(Tag, blank=True)
@@ -47,7 +47,7 @@ class Model(EditorBaseModel):
     format = models.ForeignKey(Format, on_delete=models.CASCADE)
     renderer = models.ForeignKey(Renderer, on_delete=models.CASCADE)
     file = models.CharField(max_length=100)
-    size = models.IntegerField()
+    size = models.BigIntegerField()
 
 
 class Image(EditorBaseModel):
