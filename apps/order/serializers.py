@@ -42,7 +42,7 @@ class NewebpayResponseSerializer(serializers.ModelSerializer):
 
 class EZPayInvoiceSerializer(serializers.ModelSerializer):
     MerchantID = serializers.CharField(max_length=15, source="merchant_id")
-    MerchantOrderNo = serializers.CharField(max_length=20, source="merchant_order_no")
+    MerchantOrderNo = serializers.CharField(max_length=20, source="invoice_merchant_order_no")
     InvoiceTransNo = serializers.CharField(max_length=20, source="invoice_trans_no")
     TotalAmt = serializers.DecimalField(max_digits=10, decimal_places=4, source="total_amount")
     InvoiceNumber = serializers.CharField(max_length=10, source="invoice_number")

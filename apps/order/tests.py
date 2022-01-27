@@ -1,3 +1,4 @@
+import base64
 import json
 from unittest import mock
 from collections import OrderedDict, Counter
@@ -201,7 +202,7 @@ class OrderTest(TestCase):
                 "Message": "\u96fb\u5b50\u767c\u7968\u958b\u7acb\u6210\u529f",
                 "Result": {"CheckCode": "00E108DF7DE8756AF003312206DA77A4C37AE33990EA04A944C414113D512228",
                            "MerchantID": "3502275",
-                           "MerchantOrderNo": "MSM20211227000013",
+                           "MerchantOrderNo": "MSM20211227000013001",
                            "InvoiceNumber": "DS12223139",
                            "TotalAmt": 1000,
                            "InvoiceTransNo": 15110317583641325,
@@ -212,8 +213,9 @@ class OrderTest(TestCase):
                            "QRcodeR": "**\\u5546\\u54c1\\u4e00:2:99:\\u5546\\u54c1\\u4e8c:3:50"
                            }
                 }
-        EZPayInvoiceMixin().handle_response(data=data)
-        assert Invoice.objects.filter(invoice_number="DS12223139", order_id=order.id).exists()
+        EZPayInvoiceMixin().handle_response(data=data, order_id=order.id)
+        assert Invoice.objects.filter(
+            invoice_number="DS12223139", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -479,6 +481,12 @@ class OrderTest(TestCase):
 
     @debugger_queries
     def test_test_ezpay_get_post_data(self):
+        order = Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001001", amount=1000, paid_by="")
+        result = EZPayInvoiceMixin().get_post_data(order=order)
+        print(result)
+
+    @debugger_queries
+    def test_test_ezpay_encrypt(self):
         post_data = {
             'RespondType': 'JSON',
             'Version': '1.4',
@@ -546,15 +554,19 @@ class OrderTest(TestCase):
 
         self.assertEqual(encrypted_post_data, expect_encrypted_post_data)
 
+    @override_settings(EZPAY_ID="34125535")
+    @override_settings(EZPAY_HASHKEY="zD08ptpUcqb9F473AF8FCxujm6ePdjqP")
+    @override_settings(EZPAY_HASHIV="CQ2VvpJQ9Bxfa1BP")
     @debugger_queries
     def test_test_ezpay(self):
-        Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001", amount=1000, paid_by="")
+        Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001002", amount=1000, paid_by="")
         url = '/api/test_ezpay'
         data = {
             "order_id": 1
         }
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=data, format="json")
+        assert Invoice
         print(response.data)
 
     @debugger_queries
@@ -569,3 +581,20 @@ class OrderTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.data["sessionid"] is not None
+
+    def test_encode_base64(self):
+        message = {   "type": "service_account",   "project_id": "ms-model-lib-project-id"}
+        message_str = json.dumps(message)
+        message_bytes = message_str.encode()
+        base64_bytes = base64.b64encode(message_bytes)
+
+        base64_message = base64_bytes.decode()
+        print(base64_message)
+
+        # encoded string from first example
+        b64_str = base64_message
+        b64_str = b64_str.encode()
+        b64_bytes = base64.b64decode(b64_str)
+        decode_str = b64_bytes.decode()
+        decode_dict = json.loads(decode_str)
+

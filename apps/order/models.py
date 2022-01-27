@@ -26,6 +26,7 @@ class Order(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=4)
     item_count = models.IntegerField(default=0)
     invoice_number = models.CharField(max_length=10, null=True)
+    invoice_counter = models.IntegerField(default=1)
 
     paid_at = models.DateTimeField(null=True)
     paid_by = models.CharField(max_length=10, null=True)
@@ -76,6 +77,7 @@ class Invoice(models.Model):
     payment = models.OneToOneField(NewebpayPayment, on_delete=models.PROTECT, related_name="invoice")
 
     invoice_trans_no = models.CharField(max_length=20)
+    invoice_merchant_order_no = models.CharField(max_length=30)
     total_amount = models.DecimalField(max_digits=10, decimal_places=4)
     invoice_number = models.CharField(max_length=10)
     random_num = models.CharField(max_length=4)

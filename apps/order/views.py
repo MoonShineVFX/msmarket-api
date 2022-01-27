@@ -3,6 +3,7 @@ from django.utils import timezone
 import requests
 from decimal import Decimal
 from django.db import transaction
+from django.db.models import F
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView, GenericAPIView
@@ -97,7 +98,7 @@ class EZPayInvoiceMixin(object):
             "RespondType": "JSON",
             "Version": "1.4",
             "TimeStamp": int(timezone.now().timestamp()),
-            "MerchantOrderNo": order.merchant_order_no,
+            "MerchantOrderNo": '%s%03d' % (order.merchant_order_no, order.invoice_counter),
             "Status": "1",
             "Category": "B2C",  # B2B, B2C
             "BuyerName": order.user.name,
@@ -115,7 +116,7 @@ class EZPayInvoiceMixin(object):
         }
         return urlencode(post_data)
 
-    def call_invoice_api(self, order):
+    def call_invoice_api_and_save(self, order):
         post_data = self.get_post_data(order)
         encrypted_post_data = ezpay_cipher.encrypt(raw=post_data)
 
@@ -124,17 +125,19 @@ class EZPayInvoiceMixin(object):
             "PostData_": encrypted_post_data
         }
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
+        self.handle_response(data=response.text, order_id=order.id)
 
-        return Response(response.json(), status=status.HTTP_200_OK)
+        return response.text
 
-    def handle_response(self, data):
+    def handle_response(self, data, order_id):
         result_serializer = serializers.EZPayResponseSerializer(data=data)
         if result_serializer.is_valid():
             validated_data = result_serializer.validated_data
             invoice_data = validated_data.pop('Result', None)
             if validated_data["status"] == "SUCCESS":
                 ezpay_id = invoice_data.pop('merchant_id')
-                merchant_order_no = invoice_data.pop('merchant_order_no')
+                invoice_merchant_order_no = invoice_data.get('invoice_merchant_order_no')
+                merchant_order_no = invoice_merchant_order_no[:-3]
                 if ezpay_id == settings.EZPAY_ID:
                     order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
                     if order and order.success_payment_id:
@@ -143,6 +146,7 @@ class EZPayInvoiceMixin(object):
                         invoice = Invoice.objects.create(**invoice_data)
             else:
                 invoice_error = InvoiceError.objects.create(**validated_data)
+                Order.objects.filter(id=order_id).update(invoice_counter=F("invoice_counter") + 1)
 
 
 class OrderCreate(APIView):
@@ -334,6 +338,7 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
                         "paid_by": payment.payment_type,
                         "success_payment": payment.id
                     })
+                    self.call_invoice_api_and_save(order=order)
 
             else:
                 order_update = {"status": Order.FAIL}
@@ -404,24 +409,15 @@ class CartProductRemove(PostDestroyView):
         return Response(data=data, status=status.HTTP_200_OK)
 
 
-class TestEZPay(APIView, EZPayInvoiceMixin):
-    permission_classes = (IsAuthenticated, )
+class CreateEZPayInvoiceFromOrder(APIView, EZPayInvoiceMixin):
+    permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request, *args, **kwargs):
-        order_id = self.request.data.get('order_id', None)
+        order_id = self.request.data.get('orderId', None)
+
         order = get_object_or_404(Order, id=order_id)
-
-        post_data = self.get_post_data(order)
-        encrypted_post_data = ezpay_cipher.encrypt(raw=post_data)
-
-        data = {
-            "MerchantID_": settings.EZPAY_ID,
-            "PostData_": encrypted_post_data
-        }
-        response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
-        self.handle_response(data=response.text)
-
-        return Response(response.json, status=status.HTTP_200_OK)
+        result = self.call_invoice_api_and_save(order=order)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class TestCookie(APIView):
