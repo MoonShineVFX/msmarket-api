@@ -13,6 +13,10 @@ class Banner(EditorBaseModel):
     description = models.TextField(null=True, default="")
     link = models.URLField(null=True)
 
+    is_active = models.BooleanField(default=False)
+    active_at = models.DateTimeField(null=True)
+    inactive_at = models.DateTimeField(null=True)
+
 
 class Tutorial(EditorBaseModel):
     title = models.CharField(max_length=200)
@@ -28,6 +32,10 @@ class AboutUs(EditorBaseModel):
     model_count = models.IntegerField(default=0)
     format_count = models.IntegerField(default=0)
     render_count = models.IntegerField(default=0)
+
+
+class Privacy(EditorBaseModel):
+    detail = models.TextField(null=True, default="")
 
 
 @receiver(models.signals.post_delete, sender=Tutorial)

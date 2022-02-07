@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from rest_framework import serializers
 from django.conf import settings
-from ..product.serializers import ProductListSerializer
+from ..product.serializers import ProductListSerializer, ActiveMixin
 from ..user.serializers import EditorBaseSerializer
-from .models import Product, Tutorial, AboutUs, Banner
+from .models import Tutorial, AboutUs, Banner, Privacy
 
 
 class IndexBannerSerializer(ProductListSerializer):
@@ -40,6 +40,18 @@ class AdminAboutUsSerializer(AboutUsSerializer, EditorBaseSerializer):
                   "createTime", "updateTime", "creator", "updater")
 
 
+class PrivacySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Privacy
+        fields = ('detail',)
+
+
+class AdminPrivacySerializer(EditorBaseSerializer):
+    class Meta:
+        model = Privacy
+        fields = ('detail', "createTime", "updateTime", "creator", "updater")
+
+
 class TutorialSerializer(serializers.ModelSerializer):
     imgUrl = serializers.SerializerMethodField()
 
@@ -66,18 +78,20 @@ class AdminTutorialCreateSerializer(TutorialSerializer, EditorBaseSerializer):
                   "createTime", "updateTime", "creator", "updater")
 
 
-class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer):
+class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveMixin):
 
     class Meta:
         model = Banner
         fields = ('id', 'title', 'description', 'imgUrl', 'link',
-                  "createTime", "updateTime", "creator", "updater")
+                  "createTime", "updateTime", "creator", "updater",
+                  'isActive', 'activeTime', 'inactiveTime')
 
 
-class AdminBannerCreateSerializer(AdminBannerSerializer):
+class AdminBannerCreateSerializer(AdminBannerSerializer, ActiveMixin):
     file = serializers.ImageField(write_only=True, source="image")
 
     class Meta:
         model = Banner
         fields = ('id', 'title', 'description', 'file', 'link', 'imgUrl',
-                  "createTime", "updateTime", "creator", "updater")
+                  "createTime", "updateTime", "creator", "updater",
+                  'isActive', 'activeTime', 'inactiveTime')

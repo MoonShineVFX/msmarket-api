@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
-from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView
+from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView, CreateActiveViewMixin, UpdateActiveViewMixin
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -79,27 +79,15 @@ class AdminProductDetail(RetrieveAPIView):
         return self.retrieve(request, *args, **kwargs)
 
 
-class AdminProductCreate(WebCreateView):
+class AdminProductCreate(CreateActiveViewMixin, WebCreateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
 
 
-class AdminProductUpdate(PostUpdateView):
+class AdminProductUpdate(UpdateActiveViewMixin, PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
     queryset = Product
-
-    def perform_update(self, serializer):
-        data = {"updater_id": self.request.user.id, "updated_at": timezone.now()}
-
-        is_active = serializer.validated_data.get("is_active", None)
-        if is_active is not None:
-            if is_active:
-                data.update({"active_at": timezone.now()})
-            else:
-                data.update({"inactive_at": timezone.now()})
-
-        serializer.save(**data)
 
 
 class AdminProductActive(AdminProductUpdate):

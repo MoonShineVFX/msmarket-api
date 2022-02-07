@@ -136,13 +136,13 @@ class PostDestroyView(DestroyAPIView):
 class WebCreateView(GenericAPIView):
     permission_classes = (IsAuthenticated, )
 
-    def get_extra_attrs(self):
-        return {"creator_id": self.request.user.id}
+    def perform_create(self, serializer):
+        serializer.save(**{"creator_id": self.request.user.id})
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(**self.get_extra_attrs())
+            self.perform_create(serializer)
             data = {}
             return Response(data, status=status.HTTP_201_CREATED)
         else:
@@ -152,16 +152,42 @@ class WebCreateView(GenericAPIView):
 class WebUpdateView(GenericAPIView):
     permission_classes = (IsAuthenticated, )
 
-    def get_extra_attrs(self):
-        return {"updater_id": self.request.user.id, "updated_at": timezone.now()}
+    def perform_update(self, serializer):
+        serializer.save(**{"updater_id": self.request.user.id, "updated_at": timezone.now()})
 
     def post(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.serializer_class(instance=instance, data=request.data)
         if serializer.is_valid():
-            serializer.save(**self.get_extra_attrs())
+            self.perform_update(serializer)
             data = {}
             return Response(data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+class CreateActiveViewMixin(object):
+    def perform_create(self, serializer):
+        is_active = serializer.validated_data.get("is_active")
+        data = {"creator_id": self.request.user.id}
+
+        if is_active:
+            data.update({"active_at": timezone.now()})
+        else:
+            data.update({"inactive_at": timezone.now()})
+
+        serializer.save(**data)
+
+
+class UpdateActiveViewMixin(object):
+    def perform_update(self, serializer):
+        data = {"updater_id": self.request.user.id, "updated_at": timezone.now()}
+
+        is_active = serializer.validated_data.get("is_active", None)
+        if is_active is not None:
+            if is_active:
+                data.update({"active_at": timezone.now()})
+            else:
+                data.update({"inactive_at": timezone.now()})
+
+        serializer.save(**data)

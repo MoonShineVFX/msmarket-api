@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from ..category.models import Tag
 from ..user.models import User
 from ..product.models import Product
-from .models import Banner, Tutorial, AboutUs
+from .models import Banner, Tutorial, AboutUs, Privacy
 from ..product.tests import get_test_image_file
 
 from django.test.utils import override_settings
@@ -27,8 +27,10 @@ class IndexTest(TestCase):
         Banner.objects.create(id=1, title="banner01", creator=self.user)
         Banner.objects.create(id=2, title="banner02", creator=self.user)
 
-        AboutUs.objects.create(id=1, title="AboutUs", description="description", creator=self.user
-                               )
+        AboutUs.objects.create(id=1, title="AboutUs", description="description", creator=self.user)
+
+        Privacy.objects.create(id=1, detail="detail", creator=self.user)
+
         Tutorial.objects.create(id=1, title="tutorial01", creator=self.user, link="https://medium.com")
         Tutorial.objects.create(id=2, title="tutorial02", creator=self.user)
 
@@ -52,6 +54,14 @@ class IndexTest(TestCase):
     @debugger_queries
     def test_about_us(self):
         url = '/api/about_us'
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_privacy(self):
+        url = '/api/privacy'
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200
@@ -84,6 +94,15 @@ class IndexTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_admin_privacy(self):
+        url = '/api/admin_privacy'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_admin_about_us_update(self):
         url = '/api/admin_about_update'
         data = {
@@ -96,6 +115,18 @@ class IndexTest(TestCase):
         }
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_privacy_update(self):
+        url = '/api/admin_privacy_update'
+        data = {
+            "detail": "描述",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
 
@@ -175,12 +206,16 @@ class IndexTest(TestCase):
             "file": get_test_image_file(),
             "link": "https://www.facebook.com",
             'description': "des",
+            "isActive": True
         }
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="multipart")
         print(response.data)
         assert response.status_code == 201
-        assert Banner.objects.filter(title="標題", link="https://www.facebook.com", creator_id=self.admin.id).exists()
+        banner = Banner.objects.filter(
+            title="標題", link="https://www.facebook.com", creator_id=self.admin.id, is_active=True).first()
+        assert banner is not None
+        assert banner.active_at is not None
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -191,10 +226,13 @@ class IndexTest(TestCase):
             "title": "新標題",
             "file": get_test_image_file(),
             "link": "https://www.facebook.com",
+            "isActive": False
         }
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="multipart")
         print(response.data)
         assert response.status_code == 200
-        assert Banner.objects.filter(
-            id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id).exists()
+        banner = Banner.objects.filter(
+            id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id, is_active=False).first()
+        assert banner is not None
+        assert banner.inactive_at is not None

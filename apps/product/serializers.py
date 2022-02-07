@@ -116,6 +116,7 @@ class DetailImgUrlMixin(serializers.ModelSerializer):
 
 
 class ActiveMixin(serializers.ModelSerializer):
+    isActive = serializers.BooleanField(source="is_active")
     activeTime = serializers.SerializerMethodField()
     inactiveTime = serializers.SerializerMethodField()
 
@@ -229,7 +230,6 @@ class AdminProductCreateSerializer(serializers.ModelSerializer):
 
 
 class AdminProductActiveSerializer(EditorBaseSerializer, ActiveMixin):
-    isActive = serializers.BooleanField(source="is_active", allow_null=None, write_only=True)
     tags = TagNameOnlySerializer(many=True, read_only=True)
 
     class Meta:

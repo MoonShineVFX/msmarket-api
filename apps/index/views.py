@@ -1,11 +1,12 @@
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
-from ..shortcuts import PostListView, PostCreateView, PostUpdateView, PostDestroyView
+from ..shortcuts import PostListView, PostCreateView, PostUpdateView, CreateActiveViewMixin, UpdateActiveViewMixin
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-from .models import Banner, Tutorial, AboutUs
+from .models import Banner, Tutorial, AboutUs, Privacy
 from ..product.models import Product, Image
 from ..category.models import Tag
 
@@ -69,6 +70,16 @@ class AboutUsView(RetrieveAPIView):
         return self.get(self, request, *args, **kwargs)
 
 
+class PrivacyView(RetrieveAPIView):
+    serializer_class = serializers.PrivacySerializer
+
+    def get_object(self):
+        return Privacy.objects.first()
+
+    def post(self, request, *args, **kwargs):
+        return self.get(self, request, *args, **kwargs)
+
+
 class TutorialListView(GenericAPIView):
     serializer_class = serializers.TutorialLinkSerializer
     queryset = Tutorial.objects.order_by('-created_at').all()
@@ -100,6 +111,24 @@ class AdminAboutUsUpdate(PostUpdateView):
         return AboutUs.objects.select_related("creator", "updater").first()
 
 
+class AdminPrivacyView(RetrieveAPIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminPrivacySerializer
+
+    def get_object(self):
+        return Privacy.objects.select_related("creator", "updater").first()
+
+    def post(self, request, *args, **kwargs):
+        return self.get(self, request, *args, **kwargs)
+
+
+class AdminPrivacyUpdate(PostUpdateView):
+    serializer_class = serializers.AdminPrivacySerializer
+
+    def get_object(self):
+        return Privacy.objects.select_related("creator", "updater").first()
+
+
 class AdminTutorialListView(PostListView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
@@ -123,12 +152,12 @@ class AdminBannerListView(PostListView):
     queryset = Banner.objects.select_related("creator", "updater")
 
 
-class AdminBannerCreateView(PostCreateView):
+class AdminBannerCreateView(CreateActiveViewMixin, PostCreateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
 
 
-class AdminBannerUpdateView(PostUpdateView):
+class AdminBannerUpdateView(UpdateActiveViewMixin, PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
     queryset = Banner.objects.select_related("creator", "updater")
