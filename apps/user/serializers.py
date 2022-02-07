@@ -26,7 +26,7 @@ class RegisterCustomerSerializer(serializers.Serializer):
 
         user = User.objects.create(name=name, nick_name=nick_name, email=email)
         user.set_password(raw_password=password)
-        user.save()
+        user.save(update_fields=['password'])
         return user
 
 
