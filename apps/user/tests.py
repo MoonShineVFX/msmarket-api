@@ -36,6 +36,20 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_register_with_exist_email(self):
+        url = '/api/register'
+        data = {
+            "realName": "realName",
+            "nickname": "nickName",
+            "email": "admin@mail.com",
+            "password": "password"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 400
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def _test_rest_register(self):
         url = '/api/rest-auth/registration'
         data = {

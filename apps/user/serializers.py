@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.db.models import Q
 from django.conf import settings
+from rest_framework.serializers import ValidationError
 from ..serializers import EditorBaseSerializer
 from rest_framework import serializers
 from .models import User, AdminProfile
@@ -11,6 +12,11 @@ class RegisterCustomerSerializer(serializers.Serializer):
     nickname = serializers.CharField()
     email = serializers.EmailField()
     password = serializers.CharField()
+
+    def validate_email(self, data):
+        if User.objects.filter(email=data).exists():
+            raise ValidationError("Email already exists")
+        return data
 
     def create(self, validated_data):
         name = validated_data.pop('realName', None)
