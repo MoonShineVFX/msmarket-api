@@ -24,8 +24,9 @@ class IndexTest(TestCase):
         p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, creator_id=1)
 
-        Banner.objects.create(id=1, title="banner01", creator=self.user)
-        Banner.objects.create(id=2, title="banner02", creator=self.user)
+        Banner.objects.create(id=1, title="banner01", creator=self.user, is_active=True)
+        Banner.objects.create(id=2, title="banner02", creator=self.user, is_active=True)
+        Banner.objects.create(id=3, title="banner03", creator=self.user, is_active=False)
 
         AboutUs.objects.create(id=1, title="AboutUs", description="description", creator=self.user)
 
@@ -49,6 +50,7 @@ class IndexTest(TestCase):
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200
+        assert len(response.data["banners"]) == 2
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -234,5 +236,21 @@ class IndexTest(TestCase):
         assert response.status_code == 200
         banner = Banner.objects.filter(
             id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id, is_active=False).first()
+        assert banner is not None
+        assert banner.inactive_at is not None
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_banner_active(self):
+        url = '/api/admin_banner_active'
+        data = {
+            "id": 1,
+            "isActive": False
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 200
+        banner = Banner.objects.filter(id=1, updater_id=self.admin.id, is_active=False).first()
         assert banner is not None
         assert banner.inactive_at is not None

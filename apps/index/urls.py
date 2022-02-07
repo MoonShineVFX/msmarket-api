@@ -22,4 +22,5 @@ urlpatterns = [
     url(r'^admin_banners$', views.AdminBannerListView.as_view(), name='admin-banner-list'),
     url(r'^admin_banner_create$', views.AdminBannerCreateView.as_view(), name='admin-banner-create'),
     url(r'^admin_banner_update$', views.AdminBannerUpdateView.as_view(), name='admin-banner-update'),
+    url(r'^admin_banner_active$', views.AdminBannerActiveView.as_view(), name='admin-banner-active'),
 ]

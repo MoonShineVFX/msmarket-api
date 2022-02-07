@@ -87,7 +87,7 @@ class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveM
                   'isActive', 'activeTime', 'inactiveTime')
 
 
-class AdminBannerCreateSerializer(AdminBannerSerializer, ActiveMixin):
+class AdminBannerCreateSerializer(AdminBannerSerializer):
     file = serializers.ImageField(write_only=True, source="image")
 
     class Meta:
@@ -95,3 +95,15 @@ class AdminBannerCreateSerializer(AdminBannerSerializer, ActiveMixin):
         fields = ('id', 'title', 'description', 'file', 'link', 'imgUrl',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
+
+
+class AdminBannerActiveSerializer(AdminBannerSerializer):
+
+    class Meta:
+        model = Banner
+        fields = ('id', 'title', 'description', 'link', 'imgUrl',
+                  "createTime", "updateTime", "creator", "updater",
+                  'isActive', 'activeTime', 'inactiveTime')
+        read_only_fields = ('id', 'title', 'description', 'link', 'imgUrl',
+                            "createTime", "updateTime", "creator", "updater",
+                            'activeTime', 'inactiveTime')

@@ -47,7 +47,7 @@ class AdminCommonView(APIView):
 
 class IndexView(APIView):
     def post(self, request):
-        banners = Banner.objects.all()
+        banners = Banner.objects.filter(is_active=True).all()
         new_products = Product.objects.filter(is_active=True).order_by("-active_at")[:4]
         tutorials = Tutorial.objects.order_by("-created_at")[:3]
 
@@ -161,3 +161,20 @@ class AdminBannerUpdateView(UpdateActiveViewMixin, PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
     queryset = Banner.objects.select_related("creator", "updater")
+
+
+class AdminBannerActiveView(PostUpdateView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminBannerCreateSerializer
+    queryset = Banner.objects.select_related("creator", "updater")
+
+    def perform_update(self, serializer):
+        is_active = serializer.validated_data.get("is_active")
+        data = {"updater_id": self.request.user.id, "updated_at": timezone.now(), "is_active": is_active}
+
+        if is_active:
+            data.update({"active_at": timezone.now()})
+        else:
+            data.update({"inactive_at": timezone.now()})
+
+        Banner.objects.filter(id=serializer.instance.id).update(**data)
