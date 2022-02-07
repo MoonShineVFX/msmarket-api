@@ -117,12 +117,16 @@ class OrderDetailSerializer(OrderSerializer):
 
 
 class AdminOrderListSerializer(OrderSerializer):
+    tradeNumber = serializers.SerializerMethodField()
     account = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ('id', 'orderNumber', 'price', 'account', 'status', 'invoice',
+        fields = ('id', 'orderNumber', 'tradeNumber', 'price', 'account', 'status', 'invoice',
                   'createdAt', 'paidAt', 'paidBy')
+
+    def get_tradeNumber(self, instance):
+        return instance.success_payment.trade_no if instance.success_payment else ""
 
     def get_account(self, instance):
         return instance.user.email
