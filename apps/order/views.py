@@ -155,7 +155,8 @@ class EZPayInvoiceMixin(object):
 
                 if ezpay_id == settings.EZPAY_ID:
                     order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
-                    if order and order.success_payment_id:
+                    # 有訂單，並且有成功付款，且沒有發票，才會建立新發票
+                    if order and order.success_payment_id and not order.invoice_number:
                         invoice_data["order_id"] = order.id if order else None
                         invoice_data["payment_id"] = order.success_payment_id if order else None
                         invoice = Invoice.objects.create(**invoice_data)
