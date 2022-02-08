@@ -566,6 +566,7 @@ class OrderTest(TestCase):
         EZPayInvoiceMixin().handle_str_response(data=data, order_id=order.id)
         assert Invoice.objects.filter(
             invoice_number="DS12223164", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
+        assert Order.objects.filter(id=order.id, invoice_number="DS12223164").exists()
 
     @debugger_queries
     def test_test_cookie(self):

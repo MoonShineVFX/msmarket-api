@@ -159,6 +159,7 @@ class EZPayInvoiceMixin(object):
                         invoice_data["order_id"] = order.id if order else None
                         invoice_data["payment_id"] = order.success_payment_id if order else None
                         invoice = Invoice.objects.create(**invoice_data)
+                        Order.objects.filter(id=order_id).update(invoice_number=invoice_data["invoice_number"])
             else:
                 invoice_error = InvoiceError.objects.create(**validated_data)
                 Order.objects.filter(id=order_id).update(invoice_counter=F("invoice_counter") + 1)
