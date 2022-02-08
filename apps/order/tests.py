@@ -188,6 +188,23 @@ class OrderTest(TestCase):
     @override_settings(EZPAY_ID="3502275")
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_ezpay_invoice_handle_response_with_str(self):
+        order = Order.objects.create(user=self.user, merchant_order_no="MSM20220207000001", amount=1000)
+        encrypted_data = NewebpayResponse.objects.create(
+            order_id=order.id, Status="", TradeInfo="", TradeSha="", Version="",
+            MerchantID="MerchantID", is_decrypted=True)
+        payment = NewebpayPayment.objects.create(
+            encrypted_data_id=encrypted_data.id, order_id=order.id, amount=1000, pay_time=timezone.now())
+        order.success_payment = payment
+        order.save()
+        data = "Status=LIB10003&Message=%E8%A9%B2%E7%AD%86%E8%87%AA%E8%A8%82%E5%96%AE%E8%99%9F%E5%B7%B2%E9%87%8D%E8%A6%86%E9%96%8B%E7%AB%8B%E7%99%BC%E7%A5%A8%EF%BC%8C%E8%AB%8B%E7%A2%BA%E8%AA%8D"
+        EZPayInvoiceMixin().handle_response(data=data, order_id=order.id)
+        assert Invoice.objects.filter(
+            invoice_number="AB00000001", order_id=order.id, invoice_merchant_order_no="MSM20220207000001001").exists()
+
+    @override_settings(EZPAY_ID="3502275")
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_ezpay_invoice_handle_response(self):
         order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000)
         encrypted_data = NewebpayResponse.objects.create(

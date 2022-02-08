@@ -90,7 +90,6 @@ class Invoice(models.Model):
 
 
 class InvoiceError(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="invoice_error")
     status = models.CharField(max_length=10)
     message = models.CharField(max_length=30)
 

@@ -23,7 +23,7 @@ import codecs
 from django.conf import settings
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-from urllib.parse import urlencode, parse_qs
+from urllib.parse import urlencode, parse_qsl
 from binascii import hexlify
 
 # make utf8mb4 recognizable.
@@ -85,7 +85,7 @@ class EZPayInvoiceMixin(object):
             for p in order.products.all():
                 item_count = item_count + "|1" if item_count == "" else "1"
 
-                price = p.price * Decimal("1.05")
+                price = int(p.price * Decimal("1.05"))
                 item_price = item_price + "|{}".format(price) if item_price == "" else str(price)
         else:
             item_count = "1"
@@ -95,7 +95,7 @@ class EZPayInvoiceMixin(object):
         tax_amt = order.amount * tax_rate
 
         post_data = {
-            "RespondType": "JSON",
+            "RespondType": "String",
             "Version": "1.4",
             "TimeStamp": int(timezone.now().timestamp()),
             "MerchantOrderNo": '%s%03d' % (order.merchant_order_no, order.invoice_counter),
@@ -130,6 +130,10 @@ class EZPayInvoiceMixin(object):
         return response.text
 
     def handle_response(self, data, order_id):
+        if type(data) == str:
+            data = dict(parse_qsl(data))
+            print(data)
+
         result_serializer = serializers.EZPayResponseSerializer(data=data)
         if result_serializer.is_valid():
             validated_data = result_serializer.validated_data
@@ -147,6 +151,8 @@ class EZPayInvoiceMixin(object):
             else:
                 invoice_error = InvoiceError.objects.create(**validated_data)
                 Order.objects.filter(id=order_id).update(invoice_counter=F("invoice_counter") + 1)
+        else:
+            print(result_serializer.errors)
 
 
 class OrderCreate(APIView):
