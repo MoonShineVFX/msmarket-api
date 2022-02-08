@@ -62,7 +62,7 @@ class EZPayInvoiceSerializer(serializers.ModelSerializer):
 class EZPayResponseSerializer(serializers.Serializer):
     Status = serializers.CharField(max_length=10, source="status")
     Message = serializers.CharField(max_length=30, source="message")
-    Result = EZPayInvoiceSerializer(required=False, allow_null=True)
+    Result = serializers.CharField(allow_null=True, required=False)
 
 
 class NewebpayPaymentSerializer(serializers.ModelSerializer):

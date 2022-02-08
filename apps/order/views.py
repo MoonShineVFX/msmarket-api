@@ -133,22 +133,26 @@ class EZPayInvoiceMixin(object):
             "PostData_": encrypted_post_data
         }
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
-        self.handle_response(data=response.text, order_id=order.id)
+        self.handle_str_response(data=response.text, order_id=order.id)
 
         return response.text
 
-    def handle_response(self, data, order_id):
+    def handle_str_response(self, data, order_id):
         if type(data) == str:
             data = dict(parse_qsl(data))
 
         result_serializer = serializers.EZPayResponseSerializer(data=data)
         if result_serializer.is_valid():
             validated_data = result_serializer.validated_data
-            invoice_data = validated_data.pop('Result', None)
             if validated_data["status"] == "SUCCESS":
+                invoice_serializer = serializers.EZPayInvoiceSerializer(data=data)
+                invoice_serializer.is_valid()
+                invoice_data = invoice_serializer.validated_data
+
                 ezpay_id = invoice_data.pop('merchant_id')
                 invoice_merchant_order_no = invoice_data.get('invoice_merchant_order_no')
                 merchant_order_no = invoice_merchant_order_no[:-3]
+
                 if ezpay_id == settings.EZPAY_ID:
                     order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
                     if order and order.success_payment_id:

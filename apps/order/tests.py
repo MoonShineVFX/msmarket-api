@@ -530,7 +530,7 @@ class OrderTest(TestCase):
     @override_settings(EZPAY_ID="3502275")
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_ezpay_invoice_handle_response_with_str(self):
+    def test_ezpay_invoice_handle_response_with_error(self):
         order = Order.objects.create(user=self.user, merchant_order_no="MSM20220207000001", amount=1000)
         encrypted_data = NewebpayResponse.objects.create(
             order_id=order.id, Status="", TradeInfo="", TradeSha="", Version="",
@@ -540,13 +540,13 @@ class OrderTest(TestCase):
         order.success_payment = payment
         order.save()
         data = "Status=LIB10003&Message=%E8%A9%B2%E7%AD%86%E8%87%AA%E8%A8%82%E5%96%AE%E8%99%9F%E5%B7%B2%E9%87%8D%E8%A6%86%E9%96%8B%E7%AB%8B%E7%99%BC%E7%A5%A8%EF%BC%8C%E8%AB%8B%E7%A2%BA%E8%AA%8D"
-        EZPayInvoiceMixin().handle_response(data=data, order_id=order.id)
+        EZPayInvoiceMixin().handle_str_response(data=data, order_id=order.id)
         assert InvoiceError.objects.filter(status='LIB10003').exists()
 
     @override_settings(EZPAY_ID="3502275")
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_ezpay_invoice_handle_response(self):
+    def test_ezpay_invoice_handle_response_with_str(self):
         order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000)
         encrypted_data = NewebpayResponse.objects.create(
             order_id=order.id, Status="", TradeInfo="", TradeSha="", Version="",
@@ -556,24 +556,16 @@ class OrderTest(TestCase):
         order.success_payment = payment
         order.save()
 
-        data = {"Status": "SUCCESS",
-                "Message": "\u96fb\u5b50\u767c\u7968\u958b\u7acb\u6210\u529f",
-                "Result": {"CheckCode": "00E108DF7DE8756AF003312206DA77A4C37AE33990EA04A944C414113D512228",
-                           "MerchantID": "3502275",
-                           "MerchantOrderNo": "MSM20211227000013001",
-                           "InvoiceNumber": "DS12223139",
-                           "TotalAmt": 1000,
-                           "InvoiceTransNo": 15110317583641325,
-                           "RandomNum": 4253,
-                           "CreateTime": "2015-11-03 17:58:36",
-                           "BarCode": "10412DS122231394253",
-                           "QRcodeL": "DS12223139104110342530000014b0000015c0000000099005522KbEN94WjYK3Jzwhx4VGtAw==:**********:2:2:0:",
-                           "QRcodeR": "**\\u5546\\u54c1\\u4e00:2:99:\\u5546\\u54c1\\u4e8c:3:50"
-                           }
-                }
-        EZPayInvoiceMixin().handle_response(data=data, order_id=order.id)
+        data = "Status=SUCCESS&Message=%E9%9B%BB%E5%AD%90%E7%99%BC%E7%A5%A8%E9%96%8B%E7%AB%8B%E6%88%90%E5%8A%9F" \
+               "&Result=&CheckCode=2676BC6ADE45247740753A74799224D055D46277E8D32A49B7D5DE77B70D9C6A" \
+               "&InvoiceNumber=DS12223164&InvoiceTransNo=15110411233370252&MerchantID=3502275&TotalAmt=365" \
+               "&RandomNum=2909&MerchantOrderNo=MSM20211227000013001&CreateTime=2015-11-04+11%3A23%3A33" \
+               "&BarCode=10412DS122231642909&QRcodeL=DS12223164104110429090000015c0000016d0478523699005522fqMSCB6cFR" \
+               "vu3oUfw2bfgg%3D%3D%3A%2A%2A%2A%2A%2A%2A%2A%2A%2A%2A%3A2%3A2%3A0%3A&QRcodeR=%2A%2A%E5%95%86%E5%93%81%" \
+               "E4%B8%80%3A2%3A99%3A%E5%95%86%E5%93%81%E4%BA%8C%3A3%3A50&EndStr=%23%23"
+        EZPayInvoiceMixin().handle_str_response(data=data, order_id=order.id)
         assert Invoice.objects.filter(
-            invoice_number="DS12223139", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
+            invoice_number="DS12223164", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
 
     @debugger_queries
     def test_test_cookie(self):
