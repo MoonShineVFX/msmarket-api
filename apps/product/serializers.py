@@ -164,6 +164,7 @@ class ProductDetailSerializer(DetailImgUrlMixin):
     modelSum = serializers.IntegerField(source="model_count")
     fileSize = serializers.IntegerField(source="model_size")
     perImgSize = serializers.CharField(source="texture_size")
+    isActive = serializers.BooleanField(source="is_active")
 
     tags = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     models = ModelSerializer(many=True)
@@ -172,8 +173,8 @@ class ProductDetailSerializer(DetailImgUrlMixin):
 
     class Meta:
         model = Product
-        fields = ('id', 'title', "description", 'price', 'imgUrl', 'thumb', 'modelSum', 'fileSize', 'perImgSize', 'tags',
-                  'models', 'previews', 'relativeProducts')
+        fields = ('id', 'title', "description", 'price', 'imgUrl', 'thumb', 'modelSum', 'fileSize', 'perImgSize',
+                  'tags', 'isActive', 'models', 'previews', 'relativeProducts')
 
     def get_relativeProducts(self, instance):
         products = Product.objects.filter(~Q(id=instance.id), tags__in=instance.tags.all())[:4]

@@ -37,7 +37,7 @@ class ProductList(ListAPIView):
 class ProductDetail(RetrieveAPIView):
     serializer_class = serializers.ProductDetailSerializer
     models = Model.objects.select_related("format", "renderer")
-    queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models)).filter(is_active=True)
+    queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))
 
 
 class MyProductList(PostListView):
