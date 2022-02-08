@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import json
 from django.utils import timezone
 import requests
@@ -79,16 +82,21 @@ class EZPayInvoiceMixin(object):
     api_url = "https://cinv.pay2go.com/Api/invoice_issue"
 
     def get_post_data(self, order):
-        if len(order.products.all()) > 0:
-            item_count = ""
-            item_price = ""
+        if len(order.products.all()) > 1:
+            item_name = None
+            item_count = None
+            item_unit = None
+            item_price = None
             for p in order.products.all():
-                item_count = item_count + "|1" if item_count == "" else "1"
-
+                item_name = item_name + "|" + p.title[:30] if item_name else p.title[:30]
+                item_count = item_count + "|1" if item_count else "1"
+                item_unit = item_unit + "|組" if item_unit else "組"
                 price = int(p.price * Decimal("1.05"))
-                item_price = item_price + "|{}".format(price) if item_price == "" else str(price)
+                item_price = item_price + "|{}".format(price) if item_price else str(price)
         else:
+            item_name = order.products.all()[0].title[:30]
             item_count = "1"
+            item_unit = "組"
             item_price = int(order.amount)
 
         tax_rate = Decimal("0.05")
@@ -108,9 +116,9 @@ class EZPayInvoiceMixin(object):
             "Amt": int(order.amount),  # 發票銷售額(未稅)
             "TaxAmt": int(tax_amt),
             "TotalAmt": int(order.amount + tax_amt),  # 發票總金額(含稅)
-            "ItemName": "夢想模型(共{}筆)".format(item_count),
+            "ItemName": item_name,
             "ItemCount": item_count,
-            "ItemUnit": "組",
+            "ItemUnit": item_unit,
             "ItemPrice": item_price,
             "ItemAmt": item_price,
         }
@@ -132,7 +140,6 @@ class EZPayInvoiceMixin(object):
     def handle_response(self, data, order_id):
         if type(data) == str:
             data = dict(parse_qsl(data))
-            print(data)
 
         result_serializer = serializers.EZPayResponseSerializer(data=data)
         if result_serializer.is_valid():
