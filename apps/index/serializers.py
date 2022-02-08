@@ -11,7 +11,7 @@ class IndexBannerSerializer(ProductListSerializer):
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'imgUrl', 'link')
+        fields = ('id', 'title', 'detail', 'imgUrl', 'link')
 
     def get_imgUrl(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
@@ -82,7 +82,7 @@ class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveM
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'imgUrl', 'link',
+        fields = ('id', 'title', 'detail', 'imgUrl', 'link',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
@@ -92,7 +92,7 @@ class AdminBannerCreateSerializer(AdminBannerSerializer):
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'file', 'link', 'imgUrl',
+        fields = ('id', 'title', 'detail', 'file', 'link', 'imgUrl',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
@@ -101,9 +101,9 @@ class AdminBannerActiveSerializer(AdminBannerSerializer):
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'link', 'imgUrl',
+        fields = ('id', 'title', 'detail', 'link', 'imgUrl',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
-        read_only_fields = ('id', 'title', 'description', 'link', 'imgUrl',
+        read_only_fields = ('id', 'title', 'detail', 'link', 'imgUrl',
                             "createTime", "updateTime", "creator", "updater",
                             'activeTime', 'inactiveTime')
