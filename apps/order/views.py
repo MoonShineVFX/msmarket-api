@@ -94,7 +94,7 @@ class EZPayInvoiceMixin(object):
                 price = int(p.price * Decimal("1.05"))
                 item_price = item_price + "|{}".format(price) if item_price else str(price)
         else:
-            item_name = order.products.all()[0].title[:30]
+            item_name = order.products.all()[0].title[:30] if order.products.all() else ""
             item_count = "1"
             item_unit = "組"
             item_price = int(order.amount)
@@ -132,14 +132,17 @@ class EZPayInvoiceMixin(object):
             "MerchantID_": settings.EZPAY_ID,
             "PostData_": encrypted_post_data
         }
+
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
         self.handle_str_response(data=response.text, order_id=order.id)
-
         return response.text
 
     def handle_str_response(self, data, order_id):
         if type(data) == str:
-            data = dict(parse_qsl(data))
+            if data[-13:] == "EndStr=%23%23":
+                data = dict(parse_qsl(data))
+            else:
+                data = json.loads(data)
 
         result_serializer = serializers.EZPayResponseSerializer(data=data)
         if result_serializer.is_valid():
@@ -347,7 +350,7 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
                     "encrypted_data_id": encrypted_data.id
                 })
 
-            # 交易成功時，更新 order
+            # 交易成功時，更新 order 狀態，呼叫發票api
             if trade_status == "SUCCESS":
                 order_update = {"status": Order.SUCCESS}
 
@@ -357,11 +360,14 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
                         "paid_by": payment.payment_type,
                         "success_payment": payment.id
                     })
+                    Order.objects.filter(id=order.id).update(**order_update)
                     self.call_invoice_api_and_save(order=order)
+                else:
+                    Order.objects.filter(id=order.id).update(**order_update)
 
             else:
                 order_update = {"status": Order.FAIL}
-            Order.objects.filter(id=order.id).update(**order_update)
+                Order.objects.filter(id=order.id).update(**order_update)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(error, status=status.HTTP_400_BAD_REQUEST)

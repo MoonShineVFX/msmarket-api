@@ -145,7 +145,9 @@ class OrderTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_newebpay_payment_notify_success(self):
-        order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000)
+        order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000,
+                                     invoice_counter=5)
+        order.products.set([1])
 
         url = '/api/newebpay_payment_notify'
         data = {
@@ -164,6 +166,7 @@ class OrderTest(TestCase):
             order_id=order.id, payment_type="CREDIT", amount=100, encrypted_data_id=newebpay_response.id)
         assert Order.objects.filter(
             id=order.id, status=Order.SUCCESS, paid_by="CREDIT", success_payment_id=newebpay_payment.id).exists()
+        assert Invoice.objects.filter(id=order.id).exists()
 
     @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
     @mock.patch('apps.order.views.hash_key', test_hash_key)
@@ -454,6 +457,14 @@ class OrderTest(TestCase):
     def test_test_ezpay_get_post_data(self):
         order = Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001001", amount=1000, paid_by="")
         order.products.set([1, 2])
+        result = EZPayInvoiceMixin().get_post_data(order=order)
+        print(result)
+        print(result.encode('utf-8'))
+
+    @debugger_queries
+    def test_test_ezpay_get_post_data_with_one_product(self):
+        order = Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211201000001001", amount=1000, paid_by="")
+        order.products.set([1])
         result = EZPayInvoiceMixin().get_post_data(order=order)
         print(result)
         print(result.encode('utf-8'))
