@@ -2,6 +2,9 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from .models import User, AdminProfile
 
+from django.core import mail
+from django.contrib.auth.tokens import default_token_generator
+
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
 
@@ -51,7 +54,7 @@ class UserTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def _test_rest_register(self):
-        url = '/api/rest-auth/registration'
+        url = '/api/rest_register'
         data = {
             "username": "test@mail.com",
             "email": "test@mail.com",
@@ -60,8 +63,12 @@ class UserTest(TestCase):
         }
         response = self.client.post(url, data=data, format="json")
         print(response.data)
-        assert response.status_code == 200
+        print(response.client.cookies.items())
+        assert response.status_code == 201
         assert User.objects.filter(email="test@mail.com").exists()
+        print(mail.outbox[0].subject)
+        print(mail.outbox[0].body)
+        assert mail.outbox[0]
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -71,6 +78,37 @@ class UserTest(TestCase):
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_forget_password(self):
+        url = '/api/forget_password'
+        data = {
+            "email": "user01@mail.com",
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        print(mail.outbox[0].subject)
+        print(mail.outbox[0].body)
+        assert mail.outbox[0]
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_reset_password(self):
+        url = '/api/reset_password'
+        token = default_token_generator.make_token(self.user)
+        data = {
+            "uid": self.user.id,
+            "token": token,
+            "password": "new_password"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        user = User.objects.get(id=self.user.id)
+        assert user.check_password("new_password")
+        assert user.password_updated_at
 
     @override_settings(DEBUG=True)
     @debugger_queries

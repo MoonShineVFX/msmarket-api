@@ -1,5 +1,7 @@
 from django.conf.urls import url
 from . import views
+#from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
+#from dj_rest_auth.views import LoginView, PasswordResetView, PasswordResetConfirmView
 
 urlpatterns = [
     url(r'^register$', views.RegisterView.as_view(), name='register'),
@@ -7,8 +9,13 @@ urlpatterns = [
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
     url(r'^my_account$', views.CustomerAccountDetailView.as_view(), name='customer-account-detail'),
     url(r'^account_update$', views.CustomerAccountUpdateView.as_view(), name='customer-account-update'),
-    #url(r'^forget_password$', views.ForgetPasswordView.as_view(), name='forget-password'),
-    #url(r'^reset_password$', views.ResetPasswordView.as_view(), name='reset-password'),
+
+    url(r'^forget_password$', views.ForgetPasswordView.as_view(), name='forget-password'),
+    url(r'^reset_password$', views.ResetPasswordView.as_view(), name='reset-password'),
+
+    #url(r'^rest_register$', RegisterView.as_view(), name='rest-register'),
+    #url(r'^verify_email/(?P<key>[-:\w]+)$', VerifyEmailView.as_view(), name='account_confirm_email'),
+    #url(r'^rest_login$', LoginView, name='rest-login'),
 
     url(r'^admin_accounts$', views.AdminUserList.as_view(), name='admin-account-list'),
     url(r'^admin_account_search$', views.AdminUserSearch.as_view(), name='admin-account-search'),

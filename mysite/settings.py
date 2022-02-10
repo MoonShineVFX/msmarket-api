@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    #'dj_rest_auth',
+    #'dj_rest_auth.registration',
 ]
 
 SITE_ID = 1
@@ -112,6 +114,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        #'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     )
 }
 
@@ -256,6 +259,24 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
 }
+
+# allauth and dj-rest-auth
+REST_USE_JWT = True
+REST_AUTH_TOKEN_MODEL = None
+JWT_AUTH_COOKIE = "token"
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "email"
+
+
+# SMTP
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey' # this is exactly the value 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
 
 API_HOST = os.environ.get('API_HOST', 'localhost')
 

@@ -34,6 +34,12 @@ class ForgetPasswordSerializer(serializers.Serializer):
     email = serializers.CharField(required=False)
 
 
+class ResetPasswordSerializer(serializers.Serializer):
+    uid = serializers.IntegerField()
+    token = serializers.CharField()
+    password = serializers.CharField()
+
+
 class CustomerSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(source="nick_name")
 

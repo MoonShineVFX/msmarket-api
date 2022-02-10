@@ -96,7 +96,7 @@ class CustomerAccountUpdateView(WebUpdateView):
         return self.request.user
 
 
-class ForgetPasswordView(APIView):
+class ActiveAccountView(APIView):
     def post(self, request):
         serializer = serializers.ForgetPasswordSerializer(data=request.data)
         if serializer.is_valid():
@@ -113,15 +113,38 @@ class ForgetPasswordView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+class ForgetPasswordView(APIView):
+    def post(self, request):
+        serializer = serializers.ForgetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.filter(email=email).first()
+            if user:
+                token = default_token_generator.make_token(user)
+                body = '親愛的會員您好：\n' \
+                       '收到這封電子郵件，表示您嘗試透過忘記密碼功能重置密碼，若您未使用此功能，表示有其他人輸入錯誤信箱，請直接刪除即可。\n' \
+                       '密碼重置網址，點擊後重置密碼: {0}/reset_password?uid={1}&token={2}/\n' \
+                       '＊網址有效期限為系統發行3天內\n' \
+                       '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, user.id, token)
+                send_mail('moonshine模型庫 忘記密碼重置信', body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 class ResetPasswordView(APIView):
-    def post(self, request, pk, token):
-        user = get_object_or_404(User.objects.only(
-            'last_login', 'password', 'organization__password').select_related('organization'), id=pk)
-        if default_token_generator.check_token(user, token):
-            user.password = user.organization.password
-            user.password_changed = None
-            user.save(update_fields=['password', 'password_changed'])
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    def post(self, request):
+        serializer = serializers.ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            uid = serializer.validated_data['uid']
+            token = serializer.validated_data['token']
+            password = serializer.validated_data['password']
+            user = User.objects.filter(id=uid).first()
+
+            if user and default_token_generator.check_token(user, token):
+                user.set_password(password)
+                user.password_updated_at = timezone.now()
+                user.save()
+            return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
