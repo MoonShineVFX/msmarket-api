@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from .models import Cart, Order, NewebpayPayment, NewebpayResponse, Invoice, InvoiceError
 from ..product.models import Product
+from ..user.models import CustomerProduct
 from . import serializers
 
 
@@ -125,6 +126,8 @@ class EZPayInvoiceMixin(object):
         return urlencode(post_data)
 
     def call_invoice_api_and_save(self, order):
+        if order.invoice_number:
+            return
         post_data = self.get_post_data(order)
         encrypted_post_data = ezpay_cipher.encrypt(raw=post_data)
 
@@ -134,12 +137,12 @@ class EZPayInvoiceMixin(object):
         }
 
         response = requests.post('https://cinv.pay2go.com/Api/invoice_issue', data=data, timeout=3)
-        self.handle_str_response(data=response.text, order_id=order.id)
+        self.handle_str_response(data=response.text, order=order)
         return response.text
 
-    def handle_str_response(self, data, order_id):
+    def handle_str_response(self, data, order):
         if type(data) == str:
-            if data[-13:] == "EndStr=%23%23":
+            if data[0:7] == "Status=":
                 data = dict(parse_qsl(data))
             else:
                 data = json.loads(data)
@@ -156,17 +159,15 @@ class EZPayInvoiceMixin(object):
                 invoice_merchant_order_no = invoice_data.get('invoice_merchant_order_no')
                 merchant_order_no = invoice_merchant_order_no[:-3]
 
-                if ezpay_id == settings.EZPAY_ID:
-                    order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
-                    # 有訂單，並且有成功付款，且沒有發票，才會建立新發票
-                    if order and order.success_payment_id and not order.invoice_number:
-                        invoice_data["order_id"] = order.id if order else None
-                        invoice_data["payment_id"] = order.success_payment_id if order else None
-                        invoice = Invoice.objects.create(**invoice_data)
-                        Order.objects.filter(id=order_id).update(invoice_number=invoice_data["invoice_number"])
+                # 商店代號正確，才會建立新發票
+                if ezpay_id == settings.EZPAY_ID and order.merchant_order_no == merchant_order_no:
+                    invoice_data["order_id"] = order.id if order else None
+                    invoice_data["payment_id"] = order.success_payment_id if order else None
+                    invoice = Invoice.objects.create(**invoice_data)
+                    Order.objects.filter(id=order.id).update(invoice_number=invoice_data["invoice_number"])
             else:
                 invoice_error = InvoiceError.objects.create(**validated_data)
-                Order.objects.filter(id=order_id).update(invoice_counter=F("invoice_counter") + 1)
+                Order.objects.filter(id=order.id).update(invoice_counter=F("invoice_counter") + 1)
         else:
             print(result_serializer.errors)
 
@@ -203,7 +204,13 @@ class OrderCreate(APIView):
         carts = get_list_or_404(Cart.objects.select_related("product"), id__in=cart_ids, user=request.user)
 
         products = [cart.product for cart in carts]
+        product_ids = [cart.product_id for cart in carts]
         sum_price = sum([cart.product.price for cart in carts])
+
+        bought_product_ids = CustomerProduct.objects.values_list("id", flat=True).filter(user_id=request.user.id, product_id__in=product_ids).all()
+
+        if bought_product_ids:
+            return Response({"boughtProductIds": list(bought_product_ids)}, status=status.HTTP_400_BAD_REQUEST)
 
         # 取得流水號 "MerchantOrderNo" ex: MSM20211201000001
         last_order = Order.objects.filter(created_at__date=timezone.now().date()).last()
@@ -326,48 +333,53 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
             error = "NewebpayResponse already exists"
         else:
             # 紀錄 Newebpay response
-            encrypted_data = serializer.save()
+            encrypted_data = NewebpayResponse(**serializer.validated_data)
 
             decrypt_trade_info, is_decrypted = self.decrypt_trade_info(encrypted_trade_info=trade_info)
 
             result = decrypt_trade_info["Result"]
             merchant_order_no = result.get("MerchantOrderNo", None)
-            order = Order.objects.filter(merchant_order_no=merchant_order_no).first()
+            order = Order.objects.select_related("user").prefetch_related("products").filter(
+                merchant_order_no=merchant_order_no).first()
 
             # 解碼並存成 payment
             payment = None
             payment_serializer = serializers.NewebpayPaymentSerializer(data=result)
 
             if payment_serializer.is_valid():
-                NewebpayResponse.objects.filter(id=encrypted_data.id).update(**{
-                    "is_decrypted": is_decrypted,
-                    "order_id": order.id if order else None
-                })
+                encrypted_data.is_decrypted = is_decrypted
+                encrypted_data.order_id = order.id if order else None
+                encrypted_data.save()
+
                 payment = payment_serializer.save(**{
                     "status": decrypt_trade_info["Status"],
                     "message": decrypt_trade_info["Message"],
                     "order_id": order.id if order else None,
                     "encrypted_data_id": encrypted_data.id
                 })
+            else:
+                encrypted_data.save()
 
-            # 交易成功時，更新 order 狀態，呼叫發票api
+            # 交易成功時，更新 order 狀態，新增已購買商品，呼叫發票api
             if trade_status == "SUCCESS":
-                order_update = {"status": Order.SUCCESS}
+                order.status = Order.SUCCESS
+                customer_products = [
+                    CustomerProduct(
+                        user_id=order.user_id, product_id=product.id, order_id=order.id
+                     ) for product in order.products.all()
+                ]
+                CustomerProduct.objects.bulk_create(customer_products)
 
                 if payment:
-                    order_update.update({
-                        "paid_at": payment.pay_time,
-                        "paid_by": payment.payment_type,
-                        "success_payment": payment.id
-                    })
-                    Order.objects.filter(id=order.id).update(**order_update)
-                    self.call_invoice_api_and_save(order=order)
-                else:
-                    Order.objects.filter(id=order.id).update(**order_update)
+                    order.paid_at = payment.pay_time
+                    order.paid_by = payment.payment_type
+                    order.success_payment_id = payment.id
+                    if not order.invoice_number:
+                        self.call_invoice_api_and_save(order=order)
 
             else:
-                order_update = {"status": Order.FAIL}
-                Order.objects.filter(id=order.id).update(**order_update)
+                order.status = Order.FAIL
+            order.save()
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
@@ -406,17 +418,28 @@ class CartProductList(GenericAPIView):
 class CartProductAdd(CreateAPIView):
     serializer_class = serializers.CartAddSerializer
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         product_id = serializer.validated_data['product_id']
+
         if self.request.user.is_authenticated:
-            if not Cart.objects.filter(product_id=product_id, user=self.request.user).exists():
-                return serializer.save(user=self.request.user)
+            if (Cart.objects.filter(product_id=product_id, user=self.request.user).exists()
+                    or CustomerProduct.objects.filter(product_id=product_id, user=self.request.user).exists()):
+                return Response({"productId": "The product is already bought or in the cart."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                save_data = {"user": self.request.user}
         else:
             if not self.request.session.session_key:
                 self.request.session.save()
             session_key = self.request.session.session_key
-            if not Cart.objects.filter(product_id=product_id, session_key=session_key).exists():
-                return serializer.save(session_key=session_key)
+            if Cart.objects.filter(product_id=product_id, session_key=session_key).exists():
+                return Response({"productId": "The product is already in the cart."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                save_data = {"session_key": session_key}
+
+        serializer.save(**save_data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class CartProductRemove(PostDestroyView):

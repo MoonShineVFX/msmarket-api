@@ -17,6 +17,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_login = models.DateTimeField(null=True, blank=True)
     password_updated_at = models.DateTimeField(null=True)
 
+    products = models.ManyToManyField('product.Product', through='CustomerProduct')
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
@@ -91,3 +93,9 @@ class AdminProfile(EditorBaseModel):
     user = models.OneToOneField(User, related_name="admin_profile", on_delete=models.CASCADE)
     is_asset_admin = models.BooleanField(default=False)
     is_finance_admin = models.BooleanField(default=False)
+
+
+class CustomerProduct(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    product = models.ForeignKey('product.Product', on_delete=models.PROTECT)
+    order = models.ForeignKey('order.Order', on_delete=models.PROTECT)

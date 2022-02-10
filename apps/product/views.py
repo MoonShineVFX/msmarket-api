@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from ..storage import get_download_link
 
 from .models import Product, Model, Image
+from ..user.models import CustomerProduct
 from ..order.models import Order
 from . import serializers
 from ..pagination import ProductPagination
@@ -45,10 +46,10 @@ class MyProductList(PostListView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            paid_orders = Order.objects.filter(user_id=self.request.user.id, status=Order.SUCCESS)
+            bought_products = CustomerProduct.objects.values_list("product_id", flat=True).filter(user_id=self.request.user.id)
             models = Model.objects.select_related("format", "renderer")
             return Product.objects.prefetch_related(
-                Prefetch('models', queryset=models)).filter(orders__in=paid_orders).distinct()
+                Prefetch('models', queryset=models)).filter(id__in=bought_products)
         return Product.objects.none()
 
 

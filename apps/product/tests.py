@@ -10,7 +10,7 @@ from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from .models import Product, Model, Renderer, Format, Image
-from ..user.models import User
+from ..user.models import User, CustomerProduct
 from ..category.models import Tag
 from ..order.models import Order
 
@@ -99,14 +99,10 @@ class ProductTest(TestCase):
             user=self.user, status=Order.SUCCESS, merchant_order_no="MSM20211201000001", amount=1000)
         order.products.set([1, 2])
 
-        order = Order.objects.create(
-            user=self.user, status=Order.SUCCESS, merchant_order_no="MSM20211201000002", amount=1000)
-        order.products.set([1])
+        CustomerProduct.objects.create(user=self.user, order=order, product_id=1)
+        CustomerProduct.objects.create(user=self.user, order=order, product_id=2)
 
-        order = Order.objects.create(
-            user=self.user, status=Order.UNPAID, merchant_order_no="MSM20211201000003", amount=1000)
-        order.products.set([3])
-
+        print("test start")
         url = '/api/my_products'
         self.client.force_authenticate(user=self.user)
         response = self.client.get(url)

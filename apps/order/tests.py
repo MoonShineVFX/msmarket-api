@@ -13,7 +13,7 @@ from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
 from .models import Order, Cart, NewebpayResponse, NewebpayPayment, Invoice, InvoiceError
 from ..product.models import Product
-from ..user.models import User
+from ..user.models import User, CustomerProduct
 
 from .views import add_keyIV_and_encrypt_with_SHA256, AESCipher, encrypt_with_SHA256, EZPayInvoiceMixin
 from urllib.parse import urlencode
@@ -166,7 +166,8 @@ class OrderTest(TestCase):
             order_id=order.id, payment_type="CREDIT", amount=100, encrypted_data_id=newebpay_response.id)
         assert Order.objects.filter(
             id=order.id, status=Order.SUCCESS, paid_by="CREDIT", success_payment_id=newebpay_payment.id).exists()
-        assert Invoice.objects.filter(id=order.id).exists()
+        assert CustomerProduct.objects.filter(order_id=order.id, user_id=order.user_id, product_id=1).exists()
+        assert Invoice.objects.filter(id=order.id).exists() # test will not pass
 
     @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
     @mock.patch('apps.order.views.hash_key', test_hash_key)
@@ -216,6 +217,28 @@ class OrderTest(TestCase):
         order_product_ids = [product.id for product in order.products.all()]
         self.assertEqual(Counter(order_product_ids), Counter([1, 2]))
         assert not Cart.objects.filter(id__in=[1, 2], user_id=1).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_order_create_with_bought_products(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"))
+
+        Cart.objects.create(id=1, user_id=1, product_id=1)
+        Cart.objects.create(id=2, user_id=1, product_id=2)
+
+        CustomerProduct.objects.create(user=self.user, order=order, product_id=1)
+        url = '/api/order_create'
+        data = {
+            "cartIds": [1, 2]
+        }
+        self.client.force_authenticate(user=self.user)
+        print("test start")
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 400
+        assert Cart.objects.filter(id__in=[1, 2], user_id=1).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -360,9 +383,25 @@ class OrderTest(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=data, format="json")
         print(response.data)
-        assert response.status_code == 201
+        assert response.status_code == 400
         assert Cart.objects.filter(user=self.user, product_id=1).exists()
         assert Cart.objects.filter(user=self.user, product_id=1).count() == 1
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_cart_product_add_bought_product_with_login(self):
+        order = Order.objects.create(user=self.user, merchant_order_no="merchant_order_no", amount=Decimal("1000"))
+        CustomerProduct.objects.create(user=self.user, order=order, product_id=1)
+
+        url = '/api/cart_product_add'
+        data = {
+            "productId": 1
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 400
+        assert not Cart.objects.filter(user=self.user, product_id=1).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -391,7 +430,7 @@ class OrderTest(TestCase):
         }
         response = self.client.post(url, data=data, format="json")
 
-        assert response.status_code == 201
+        assert response.status_code == 400
         assert Cart.objects.filter(product_id=1, session_key=session.session_key).exists()
         assert Cart.objects.filter(product_id=1, session_key=session.session_key).count() == 1
 
@@ -551,7 +590,7 @@ class OrderTest(TestCase):
         order.success_payment = payment
         order.save()
         data = "Status=LIB10003&Message=%E8%A9%B2%E7%AD%86%E8%87%AA%E8%A8%82%E5%96%AE%E8%99%9F%E5%B7%B2%E9%87%8D%E8%A6%86%E9%96%8B%E7%AB%8B%E7%99%BC%E7%A5%A8%EF%BC%8C%E8%AB%8B%E7%A2%BA%E8%AA%8D"
-        EZPayInvoiceMixin().handle_str_response(data=data, order_id=order.id)
+        EZPayInvoiceMixin().handle_str_response(data=data, order=order)
         assert InvoiceError.objects.filter(status='LIB10003').exists()
 
     @override_settings(EZPAY_ID="3502275")
@@ -574,7 +613,7 @@ class OrderTest(TestCase):
                "&BarCode=10412DS122231642909&QRcodeL=DS12223164104110429090000015c0000016d0478523699005522fqMSCB6cFR" \
                "vu3oUfw2bfgg%3D%3D%3A%2A%2A%2A%2A%2A%2A%2A%2A%2A%2A%3A2%3A2%3A0%3A&QRcodeR=%2A%2A%E5%95%86%E5%93%81%" \
                "E4%B8%80%3A2%3A99%3A%E5%95%86%E5%93%81%E4%BA%8C%3A3%3A50&EndStr=%23%23"
-        EZPayInvoiceMixin().handle_str_response(data=data, order_id=order.id)
+        EZPayInvoiceMixin().handle_str_response(data=data, order=order)
         assert Invoice.objects.filter(
             invoice_number="DS12223164", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
         assert Order.objects.filter(id=order.id, invoice_number="DS12223164").exists()
