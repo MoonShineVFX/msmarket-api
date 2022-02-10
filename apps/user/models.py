@@ -33,6 +33,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
     @property
+    def account(self):
+        return self.email
+
+    @property
     def is_asset_admin(self):
         if self.is_superuser:
             return True

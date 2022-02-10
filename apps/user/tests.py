@@ -121,7 +121,7 @@ class UserTest(TestCase):
         url = '/api/admin_account_create'
         self.client.force_authenticate(user=self.admin)
         data = {
-            "email": "new_admin@mail.com",
+            "account": "new_admin@mail.com",
             "password": "password",
             "isAssetAdmin": True,
             "isFinanceAdmin": True,
@@ -185,8 +185,7 @@ class UserTest(TestCase):
         url = '/api/admin_change_password'
         self.client.force_authenticate(user=self.admin)
         data = {
-            "password": "password",
-            "newPassword": "new_password",
+            "password": "new_password",
         }
         response = self.client.post(url, data=data, format="json")
         print(response.data)

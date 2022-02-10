@@ -131,13 +131,12 @@ class AdminChangePasswordView(APIView):
     def post(self, request):
         serializer = serializers.ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
-            old_password = serializer.validated_data["password"]
-            new_password = serializer.validated_data["newPassword"]
+            new_password = serializer.validated_data["password"]
             user = request.user
-            if user.check_password(old_password):
-                user.set_password(new_password)
-                user.password_updated_at = timezone.now()
-                user.save(update_fields=['password', 'password_updated_at'])
+            #if user.check_password(old_password):
+            user.set_password(new_password)
+            user.password_updated_at = timezone.now()
+            user.save(update_fields=['password', 'password_updated_at'])
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 

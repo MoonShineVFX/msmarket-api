@@ -37,7 +37,7 @@ class AdminCommonView(APIView):
 
         data = {
             "userId": request.user.id if request.user.is_authenticated else None,
-            "userName": request.user.name if request.user.is_authenticated else None,
+            "account": request.user.email if request.user.is_authenticated else None,
             "tags": TagNameOnlySerializer(tags, many=True).data,
             "imagePosition": ImagePositionTypeSerializer(Image.position_types, many=True).data
         }

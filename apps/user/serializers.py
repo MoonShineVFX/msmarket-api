@@ -69,7 +69,7 @@ class AdminUserSerializer(AdminEditorSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
+        fields = ('id', 'account', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
                   "creator", "updater", "createTime", "updateTime")
 
     def get_isAssetAdmin(self, instance):
@@ -81,10 +81,11 @@ class AdminUserSerializer(AdminEditorSerializer):
 
 class AdminUserCreateSerializer(AdminUserSerializer):
     password = serializers.CharField(write_only=True)
+    account = serializers.CharField(source="email")
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'password', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
+        fields = ('id', 'account', 'password', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
                   "creator", "updater", "createTime", "updateTime")
         read_only_fields = ['id', "createTime", "updateTime"]
 
@@ -106,9 +107,9 @@ class AdminUserCreateSerializer(AdminUserSerializer):
 class AdminUserUpdateSerializer(AdminUserSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
+        fields = ('id', 'account', 'isAssetAdmin', 'isFinanceAdmin', 'isSuperuser',
                       "creator", "updater", "createTime", "updateTime")
-        read_only_fields = ['id', 'email']
+        read_only_fields = ['id', 'account']
 
     def update(self, instance, validated_data):
         is_asset_admin = validated_data.pop('is_asset_admin', False)
@@ -126,4 +127,3 @@ class AdminUserUpdateSerializer(AdminUserSerializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField()
-    newPassword = serializers.CharField()
