@@ -242,6 +242,23 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_order_create_with_same_products(self):
+        Cart.objects.create(id=1, user_id=1, product_id=1)
+        Cart.objects.create(id=2, user_id=1, product_id=1)
+
+        url = '/api/order_create'
+        data = {
+            "cartIds": [1, 2]
+        }
+        self.client.force_authenticate(user=self.user)
+        print("test start")
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 400
+        assert Cart.objects.filter(id__in=[1, 2], user_id=1).exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_order_list(self):
         today_str = timezone.now().strftime("%Y%m%d")
         merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
@@ -479,12 +496,12 @@ class OrderTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_cart_product_remove_with_login(self):
-        Cart.objects.create(id=1, user_id=1, product_id=1)
-        Cart.objects.create(id=2, user_id=1, product_id=2)
+        Cart.objects.create(id=1111, user_id=1, product_id=1)
+        Cart.objects.create(id=2222, user_id=1, product_id=2)
 
         url = '/api/cart_product_remove'
         data = {
-            "productId": 1
+            "cartId": 1111
         }
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=data, format="json")

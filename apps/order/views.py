@@ -212,6 +212,9 @@ class OrderCreate(APIView):
         if bought_product_ids:
             return Response({"boughtProductIds": list(bought_product_ids)}, status=status.HTTP_400_BAD_REQUEST)
 
+        if len(product_ids) != len(set(product_ids)):
+            return Response("There are same products in cart, you have to remove it first.", status=status.HTTP_400_BAD_REQUEST)
+
         # 取得流水號 "MerchantOrderNo" ex: MSM20211201000001
         last_order = Order.objects.filter(created_at__date=timezone.now().date()).last()
         if last_order:
@@ -444,7 +447,7 @@ class CartProductAdd(CreateAPIView):
 
 class CartProductRemove(PostDestroyView):
     def get_object(self):
-        return get_object_or_404(Cart, product_id=self.request.data.get('productId', None), user=self.request.user)
+        return get_object_or_404(Cart, id=self.request.data.get('cartId', None), user=self.request.user)
 
     def post(self, request, *args, **kwargs):
         instance = self.get_object()
