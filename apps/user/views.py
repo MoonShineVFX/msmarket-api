@@ -123,7 +123,7 @@ class ForgetPasswordView(APIView):
                 token = default_token_generator.make_token(user)
                 body = '親愛的會員您好：\n' \
                        '收到這封電子郵件，表示您嘗試透過忘記密碼功能重置密碼，若您未使用此功能，表示有其他人輸入錯誤信箱，請直接刪除即可。\n' \
-                       '密碼重置網址，點擊後重置密碼: {0}/reset_password?uid={1}&token={2}/\n' \
+                       '密碼重置網址，點擊後重置密碼: {0}/reset_password?uid={1}&token={2}\n' \
                        '＊網址有效期限為系統發行3天內\n' \
                        '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, user.id, token)
                 send_mail('moonshine模型庫 忘記密碼重置信', body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
