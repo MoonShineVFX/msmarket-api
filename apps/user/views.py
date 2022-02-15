@@ -81,7 +81,7 @@ class AdminObtainTokenView(APIView):
         refresh['scope'] = "admin"
         token = str(refresh.access_token)
         response = Response({"token": token}, status=status.HTTP_200_OK)
-        response.set_cookie(key="token", value=token, httponly=False, max_age=60*60, secure=False, samesite="Strict")
+        response.set_cookie(key="admin_token", value=token, httponly=False, max_age=60*60, secure=False, samesite="Strict")
         return response
 
 
