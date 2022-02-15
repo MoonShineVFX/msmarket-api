@@ -23,6 +23,10 @@ from .models import User, AdminProfile
 from ..order.models import Cart
 from . import serializers
 
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView, SocialConnectView
+
 
 class RegisterView(APIView):
     def post(self, request):
@@ -269,3 +273,18 @@ class AdminUserUpdate(PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminUserUpdateSerializer
     queryset = admin_queryset
+
+
+CALLBACK_URL_YOU_SET_ON_GOOGLE = settings.API_HOST + "/login_callback"
+
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = CALLBACK_URL_YOU_SET_ON_GOOGLE
+    client_class = OAuth2Client
+
+
+class GoogleConnect(SocialConnectView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = CALLBACK_URL_YOU_SET_ON_GOOGLE
+    client_class = OAuth2Client

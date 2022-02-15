@@ -114,6 +114,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10/minute',
@@ -265,7 +266,9 @@ EZPAY_HASHIV = os.environ.get('EZPAY_HASHIV', "1234567891234567")
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,  # IMPORTANT
+    'BLACKLIST_AFTER_ROTATION': True,  # IMPORTANT
+
 }
 
 # allauth and dj-rest-auth
@@ -274,6 +277,17 @@ REST_AUTH_TOKEN_MODEL = None
 JWT_AUTH_COOKIE = "token"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "email"
 
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    }
+}
 
 # SMTP
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')

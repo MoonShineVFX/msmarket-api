@@ -1,7 +1,7 @@
 from django.conf.urls import url
 from . import views
-#from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
-#from dj_rest_auth.views import LoginView, PasswordResetView, PasswordResetConfirmView
+from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
+from dj_rest_auth.views import LoginView, PasswordResetView, PasswordResetConfirmView
 
 urlpatterns = [
     url(r'^register$', views.RegisterView.as_view(), name='register'),
@@ -9,6 +9,9 @@ urlpatterns = [
         views.ActiveAccountView.as_view(), name='active-account'),
     url(r'^login$', views.ObtainTokenView.as_view(), name='login'),
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
+
+    url('^google_login',  views.GoogleLogin.as_view(), name='google-login'),
+
     url(r'^my_account$', views.CustomerAccountDetailView.as_view(), name='customer-account-detail'),
     url(r'^account_update$', views.CustomerAccountUpdateView.as_view(), name='customer-account-update'),
 
