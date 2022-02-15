@@ -148,15 +148,32 @@ class ResetPasswordView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminChangePasswordView(APIView):
-    permission_classes = (IsAuthenticated, IsAdminUser)
+class ChangePasswordView(APIView):
+    permission_classes = (IsAuthenticated, )
 
     def post(self, request):
         serializer = serializers.ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
+            old_password = serializer.validated_data["password"]
+            new_password1 = serializer.validated_data["new_password1"]
+            new_password2 = serializer.validated_data["new_password2"]
+            user = request.user
+            if user.check_password(old_password) and new_password1 == new_password2:
+                user.set_password(new_password1)
+                user.password_updated_at = timezone.now()
+                user.save(update_fields=['password', 'password_updated_at'])
+                return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminChangePasswordView(APIView):
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def post(self, request):
+        serializer = serializers.AdminChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
             new_password = serializer.validated_data["password"]
             user = request.user
-            #if user.check_password(old_password):
             user.set_password(new_password)
             user.password_updated_at = timezone.now()
             user.save(update_fields=['password', 'password_updated_at'])

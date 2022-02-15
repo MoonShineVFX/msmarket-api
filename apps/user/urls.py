@@ -12,6 +12,7 @@ urlpatterns = [
 
     url(r'^forget_password$', views.ForgetPasswordView.as_view(), name='forget-password'),
     url(r'^reset_password$', views.ResetPasswordView.as_view(), name='reset-password'),
+    url(r'^change_password$', views.ChangePasswordView.as_view(), name='change-password'),
 
     #url(r'^rest_register$', RegisterView.as_view(), name='rest-register'),
     #url(r'^verify_email/(?P<key>[-:\w]+)$', VerifyEmailView.as_view(), name='account_confirm_email'),

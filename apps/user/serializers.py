@@ -131,5 +131,11 @@ class AdminUserUpdateSerializer(AdminUserSerializer):
         return super().update(instance, validated_data)
 
 
+class AdminChangePasswordSerializer(serializers.Serializer):
+    password = serializers.CharField()
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField()
+    newPassword = serializers.CharField(source="new_password1")
+    confirmNewPassword = serializers.CharField(source="new_password2")

@@ -19,6 +19,9 @@ class UserTest(TestCase):
         self.admin.set_password("password")
         self.admin.save()
 
+        self.user.set_password("password")
+        self.user.save()
+
         AdminProfile.objects.create(id=1, user_id=2, creator_id=2)
         AdminProfile.objects.create(id=2, user_id=3, creator_id=2)
 
@@ -109,6 +112,55 @@ class UserTest(TestCase):
         user = User.objects.get(id=self.user.id)
         assert user.check_password("new_password")
         assert user.password_updated_at
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_change_password(self):
+        url = '/api/change_password'
+
+        data = {
+            "password": "password",
+            "newPassword": "new_password",
+            "confirmNewPassword": "new_password",
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        user = User.objects.get(id=self.user.id)
+        assert user.check_password("new_password")
+        assert user.password_updated_at
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_change_password_with_wrong_input(self):
+        url = '/api/change_password'
+
+        data = {
+            "password": "wrong_password",
+            "newPassword": "new_password",
+            "confirmNewPassword": "new_password",
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 400
+        user = User.objects.get(id=self.user.id)
+        assert user.check_password("password")
+        assert not user.password_updated_at
+
+        data = {
+            "password": "password",
+            "newPassword": "new_password",
+            "confirmNewPassword": "wrong_new_password",
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 400
+        user = User.objects.get(id=self.user.id)
+        assert user.check_password("password")
+        assert not user.password_updated_at
 
     @override_settings(DEBUG=True)
     @debugger_queries
