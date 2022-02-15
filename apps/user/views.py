@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -54,6 +55,7 @@ class ObtainTokenView(APIView):
     def post(self, request):
         user = request.user
         refresh = RefreshToken.for_user(user)
+        refresh['scope'] = "customer"
         token = str(refresh.access_token)
         self.merge_cart()
         response = Response({"token": token}, status=status.HTTP_200_OK)
@@ -69,15 +71,22 @@ class ObtainTokenView(APIView):
             Cart.objects.filter(session_key=self.request.session.session_key).update(user=user)
 
 
-class GuestLogin(APIView):
+class AdminObtainTokenView(APIView):
+    def get(self, request):
+        return self.post(request)
+
     def post(self, request):
-        serializer = serializers.RegisterCustomerSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-        return Response(status=status.HTTP_200_OK)
+        user = request.user
+        refresh = RefreshToken.for_user(user)
+        refresh['scope'] = "admin"
+        token = str(refresh.access_token)
+        response = Response({"token": token}, status=status.HTTP_200_OK)
+        response.set_cookie(key="token", value=token, httponly=False, max_age=60*60, secure=False, samesite="Strict")
+        return response
 
 
 class CustomerAccountDetailView(RetrieveAPIView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.CustomerSerializer
 
@@ -89,6 +98,7 @@ class CustomerAccountDetailView(RetrieveAPIView):
 
 
 class CustomerAccountUpdateView(WebUpdateView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.CustomerSerializer
 
@@ -149,6 +159,7 @@ class ResetPasswordView(APIView):
 
 
 class ChangePasswordView(APIView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
 
     def post(self, request):
@@ -167,6 +178,7 @@ class ChangePasswordView(APIView):
 
 
 class AdminChangePasswordView(APIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request):
@@ -186,6 +198,8 @@ admin_queryset = User.objects.prefetch_related(Prefetch('admin_profile', queryse
 
 
 class AdminUserList(PostListView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminUserSerializer
     admin_profile = AdminProfile.objects.select_related("creator", "updater")
     queryset = admin_queryset
@@ -200,10 +214,14 @@ class AdminUserSearch(AdminUserList):
 
 
 class AdminUserCreate(PostCreateView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminUserCreateSerializer
     queryset = admin_queryset
 
 
 class AdminUserUpdate(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminUserUpdateSerializer
     queryset = admin_queryset

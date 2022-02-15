@@ -9,10 +9,10 @@ from ..storage import get_download_link
 
 from .models import Product, Model, Image
 from ..user.models import CustomerProduct
-from ..order.models import Order
 from . import serializers
 from ..pagination import ProductPagination
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 
 
 class ProductList(ListAPIView):
@@ -42,6 +42,7 @@ class ProductDetail(RetrieveAPIView):
 
 
 class MyProductList(PostListView):
+    authentication_classes = [CustomerJWTAuthentication]
     serializer_class = serializers.MyProductSerializer
 
     def get_queryset(self):
@@ -54,6 +55,7 @@ class MyProductList(PostListView):
 
 
 class AdminProductList(PostListView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductListSerializer
     queryset = Product.objects.select_related(
@@ -70,6 +72,7 @@ class AdminProductSearch(AdminProductList):
 
 
 class AdminProductDetail(RetrieveAPIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductDetailSerializer
     queryset = Product.objects.select_related(
@@ -81,11 +84,13 @@ class AdminProductDetail(RetrieveAPIView):
 
 
 class AdminProductCreate(CreateActiveViewMixin, WebCreateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
 
 
 class AdminProductUpdate(UpdateActiveViewMixin, PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
     queryset = Product
@@ -108,15 +113,18 @@ class AdminProductActive(AdminProductUpdate):
 
 
 class AdminImageUpload(PostCreateView):
+    authentication_classes = [AdminJWTAuthentication]
     serializer_class = serializers.UploadImageSerializer
     queryset = Image.objects.all()
 
 
 class AdminImageDelete(PostDestroyView):
+    authentication_classes = [AdminJWTAuthentication]
     queryset = Image.objects.all()
 
 
 class ModelDownloadLink(GenericAPIView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
 
     def user_has_product(self, user_id, product_id):

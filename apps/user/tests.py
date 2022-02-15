@@ -84,6 +84,31 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_JWT_scope(self):
+        from rest_framework_simplejwt.tokens import RefreshToken
+        refresh = RefreshToken.for_user(self.user)
+        refresh['scope'] = "customer"
+        token = str(refresh.access_token)
+
+        url = '/api/my_account'
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Bearer ' + token,
+        }
+        response = self.client.post(url, **auth_headers)
+        assert response.status_code == 200
+
+        refresh = RefreshToken.for_user(self.user)
+        refresh['scope'] = "admin"
+        token = str(refresh.access_token)
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Bearer ' + token,
+        }
+        response = self.client.post(url, **auth_headers)
+        print(response.data)
+        assert response.status_code == 401
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_forget_password(self):
         url = '/api/forget_password'
         data = {

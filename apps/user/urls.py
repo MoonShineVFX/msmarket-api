@@ -18,6 +18,7 @@ urlpatterns = [
     #url(r'^verify_email/(?P<key>[-:\w]+)$', VerifyEmailView.as_view(), name='account_confirm_email'),
     #url(r'^rest_login$', LoginView, name='rest-login'),
 
+    url(r'^admin_login$', views.AdminObtainTokenView.as_view(), name='admin_login'),
     url(r'^admin_accounts$', views.AdminUserList.as_view(), name='admin-account-list'),
     url(r'^admin_account_search$', views.AdminUserSearch.as_view(), name='admin-account-search'),
     url(r'^admin_account_create$', views.AdminUserCreate.as_view(), name='admin-account-create'),

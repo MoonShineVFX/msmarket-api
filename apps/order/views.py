@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 
 from .models import Cart, Order, NewebpayPayment, NewebpayResponse, Invoice, InvoiceError
 from ..product.models import Product
@@ -173,6 +174,7 @@ class EZPayInvoiceMixin(object):
 
 
 class OrderCreate(APIView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
 
     def get_trade_info_query_string(self, order):
@@ -245,6 +247,7 @@ class OrderCreate(APIView):
 
 
 class OrderList(GenericAPIView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.OrderSerializer
 
@@ -264,6 +267,7 @@ class OrderList(GenericAPIView):
 
 
 class OrderDetail(GenericAPIView):
+    authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.OrderDetailSerializer
     queryset = Order.objects.prefetch_related("products")
@@ -275,6 +279,7 @@ class OrderDetail(GenericAPIView):
 
 
 class AdminOrderSearch(GenericAPIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request, *args, **kwargs):
@@ -307,6 +312,7 @@ class AdminOrderSearch(GenericAPIView):
 
 
 class AdminOrderList(OrderList):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminOrderListSerializer
 
@@ -315,6 +321,7 @@ class AdminOrderList(OrderList):
 
 
 class AdminOrderDetail(OrderDetail):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminOrderDetailSerializer
     queryset = Order.objects.select_related("user").prefetch_related("products")
@@ -397,6 +404,7 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
 
 
 class CartProductList(GenericAPIView):
+    authentication_classes = [CustomerJWTAuthentication]
     serializer_class = serializers.CartProductListSerializer
 
     def post(self, request, *args, **kwargs):
@@ -419,6 +427,7 @@ class CartProductList(GenericAPIView):
 
 
 class CartProductAdd(CreateAPIView):
+    authentication_classes = [CustomerJWTAuthentication]
     serializer_class = serializers.CartAddSerializer
 
     def create(self, request, *args, **kwargs):
@@ -446,6 +455,8 @@ class CartProductAdd(CreateAPIView):
 
 
 class CartProductRemove(PostDestroyView):
+    authentication_classes = [CustomerJWTAuthentication]
+
     def get_object(self):
         return get_object_or_404(Cart, id=self.request.data.get('cartId', None), user=self.request.user)
 
@@ -462,6 +473,7 @@ class CartProductRemove(PostDestroyView):
 
 
 class CreateEZPayInvoiceFromOrder(APIView, EZPayInvoiceMixin):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request, *args, **kwargs):
@@ -473,6 +485,8 @@ class CreateEZPayInvoiceFromOrder(APIView, EZPayInvoiceMixin):
 
 
 class TestCookie(APIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
     def get(self, request):
         data = {
             "sessionid": self.request.session.session_key

@@ -5,16 +5,19 @@ from rest_framework.response import Response
 from .models import Tag
 from . import serializers
 from ..shortcuts import PostUpdateView, PostDestroyView
+from ..authentications import AdminJWTAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 
 class AdminTagList(PostListView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTagSerializer
     queryset = Tag.objects.select_related("creator", "updater").order_by("-updated_at", "-created_at").all()
 
 
 class AdminTagCreate(APIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request, *args, **kwargs):
@@ -31,11 +34,13 @@ class AdminTagCreate(APIView):
 
 
 class AdminTagUpdate(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     queryset = Tag.objects.select_related("creator", "updater").all()
     serializer_class = serializers.TagUpdateSerializer
 
 
 class AdminTagDelete(PostDestroyView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     queryset = Tag.objects.select_related("creator", "updater").all()

@@ -5,6 +5,7 @@ from ..shortcuts import PostListView, PostCreateView, PostUpdateView, CreateActi
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 
 from .models import Banner, Tutorial, AboutUs, Privacy
 from ..product.models import Product, Image
@@ -16,6 +17,7 @@ from . import serializers
 
 
 class CommonView(APIView):
+    authentication_classes = [CustomerJWTAuthentication]
 
     def post(self, request):
         tags = Tag.objects.all()
@@ -30,6 +32,7 @@ class CommonView(APIView):
 
 
 class AdminCommonView(APIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request):
@@ -94,6 +97,7 @@ class TutorialListView(GenericAPIView):
 
 
 class AdminAboutUsView(RetrieveAPIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminAboutUsSerializer
 
@@ -105,6 +109,8 @@ class AdminAboutUsView(RetrieveAPIView):
 
 
 class AdminAboutUsUpdate(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminAboutUsSerializer
 
     def get_object(self):
@@ -112,6 +118,7 @@ class AdminAboutUsUpdate(PostUpdateView):
 
 
 class AdminPrivacyView(RetrieveAPIView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminPrivacySerializer
 
@@ -123,6 +130,8 @@ class AdminPrivacyView(RetrieveAPIView):
 
 
 class AdminPrivacyUpdate(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminPrivacySerializer
 
     def get_object(self):
@@ -130,40 +139,47 @@ class AdminPrivacyUpdate(PostUpdateView):
 
 
 class AdminTutorialListView(PostListView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
     queryset = Tutorial.objects.select_related("creator", "updater").order_by("-updated_at","-created_at")
 
 
 class AdminTutorialCreateView(PostCreateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
 
 
 class AdminTutorialUpdateView(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
     queryset = Tutorial.objects.select_related("creator", "updater")
 
 
 class AdminBannerListView(PostListView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerSerializer
     queryset = Banner.objects.select_related("creator", "updater")
 
 
 class AdminBannerCreateView(CreateActiveViewMixin, PostCreateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
 
 
 class AdminBannerUpdateView(UpdateActiveViewMixin, PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
     queryset = Banner.objects.select_related("creator", "updater")
 
 
 class AdminBannerActiveView(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
     queryset = Banner.objects.select_related("creator", "updater")
