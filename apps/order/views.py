@@ -455,6 +455,7 @@ class CartProductRemove(PostDestroyView):
         carts = Cart.objects.filter(user=self.request.user)
         serializer = serializers.CartProductListSerializer(carts, many=True)
         data = {
+            "amount": sum(item["price"] for item in serializer.data),
             "list": serializer.data,
         }
         return Response(data=data, status=status.HTTP_200_OK)
