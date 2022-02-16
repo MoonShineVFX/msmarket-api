@@ -59,7 +59,7 @@ class NewebpayResponse(models.Model):
 
 class NewebpayPayment(models.Model):
     order = models.ForeignKey(Order, null=True, related_name="newebpay_payments", on_delete=models.PROTECT)
-    encrypted_data = models.OneToOneField(NewebpayResponse, related_name="decrypted_payment", on_delete=models.PROTECT)
+    encrypted_data = models.OneToOneField(NewebpayResponse, null=True, related_name="decrypted_payment", on_delete=models.PROTECT)
     status = models.CharField(max_length=10)
     message = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=10, decimal_places=4)
