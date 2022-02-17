@@ -114,8 +114,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        #'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
-    )
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',
+    }
 }
 
 # Database
@@ -279,6 +281,7 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
 API_HOST = os.environ.get('API_HOST', 'localhost')
+PASSWORD_RESET_TIMEOUT = 1800 # 30 min in seconds
 
 
 # Query logger

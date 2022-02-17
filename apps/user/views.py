@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils import timezone
+from datetime import timedelta
 from django.db.models import Prefetch
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
@@ -11,9 +12,9 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.throttling import AnonRateThrottle
 
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 
 from .models import User, AdminProfile
@@ -106,42 +107,49 @@ class CustomerAccountUpdateView(WebUpdateView):
         return self.request.user
 
 
-class ActiveAccountView(APIView):
-    def post(self, request):
-        serializer = serializers.ForgetPasswordSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            user = get_object_or_404(User, email=email)
-            token = default_token_generator.make_token(user)
-            body = '親愛的會員您好：\n' \
-                   '收到這封電子郵件，表示您嘗試透過忘記密碼功能重置密碼，若您未使用此功能，表示有其他人輸入錯誤信箱，請直接刪除即可。\n' \
-                   '密碼重置網址，點擊後重置為預設密碼: {0}/resetmail.html?user={1}&password_reset={2}/\n' \
-                   '＊網址有效期限為系統發行3天內\n' \
-                   '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.DASHBOARD_ROOT, user.id, token)
-            send_mail('moonshine模型庫 忘記密碼重置信', body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+class TimeLimitedTokenGenerator(PasswordResetTokenGenerator):
+    def _make_hash_value(self, user, timestamp):
+        login_timestamp = '' if user.last_login is None else user.last_login.replace(microsecond=0, tzinfo=None)
+        email_field = user.get_email_field_name()
+        email = getattr(user, email_field, '') or ''
+        password_updated_at = '' if user.password_updated_at is None else user.password_updated_at.replace(microsecond=0, tzinfo=None)
+        reset_mail_sent = '' if user.reset_mail_sent is None else user.reset_mail_sent.replace(microsecond=0, tzinfo=None)
+        return f'{user.pk}{user.password}login_timestamp={login_timestamp}{timestamp}{email}password_updated_at={password_updated_at}reset_mail_sent={reset_mail_sent}'
+
+
+reset_password_token_generator = TimeLimitedTokenGenerator()
 
 
 class ForgetPasswordView(APIView):
+    throttle_classes = [AnonRateThrottle]
+
     def post(self, request):
         serializer = serializers.ForgetPasswordSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
             user = User.objects.filter(email=email).first()
             if user:
-                token = default_token_generator.make_token(user)
+                # reset mail can only be sent every 3 min
+                if user.reset_mail_sent and timezone.now() - user.reset_mail_sent < timedelta(minutes=3):
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+                user.reset_mail_sent = timezone.now()
+                user.save(update_fields=['reset_mail_sent'])
+                token = reset_password_token_generator.make_token(user)
                 body = '親愛的會員您好：\n' \
                        '收到這封電子郵件，表示您嘗試透過忘記密碼功能重置密碼，若您未使用此功能，表示有其他人輸入錯誤信箱，請直接刪除即可。\n' \
                        '密碼重置網址，點擊後重置密碼: {0}/reset_password?uid={1}&token={2}\n' \
                        '＊網址有效期限為系統發行3天內\n' \
                        '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, user.id, token)
                 send_mail('moonshine模型庫 忘記密碼重置信', body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResetPasswordView(APIView):
+    throttle_classes = [AnonRateThrottle]
+
     def post(self, request):
         serializer = serializers.ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
@@ -150,11 +158,11 @@ class ResetPasswordView(APIView):
             password = serializer.validated_data['password']
             user = User.objects.filter(id=uid).first()
 
-            if user and default_token_generator.check_token(user, token):
+            if user and reset_password_token_generator.check_token(user, token):
                 user.set_password(password)
                 user.password_updated_at = timezone.now()
                 user.save()
-            return Response(status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -16,7 +16,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(null=True)
     last_login = models.DateTimeField(null=True, blank=True)
     password_updated_at = models.DateTimeField(null=True)
-
+    reset_mail_sent = models.DateTimeField(null=True)
     products = models.ManyToManyField('product.Product', through='CustomerProduct')
 
     objects = UserManager()

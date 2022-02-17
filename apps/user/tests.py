@@ -1,9 +1,12 @@
+from datetime import timedelta
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from .models import User, AdminProfile
 
 from django.core import mail
 from django.contrib.auth.tokens import default_token_generator
+from .views import reset_password_token_generator
 
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
@@ -123,9 +126,45 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_forget_password_again_in_3_min(self):
+        url = '/api/forget_password'
+        data = {
+            "email": "user01@mail.com",
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        print(mail.outbox[0].subject)
+        print(mail.outbox[0].body)
+        assert mail.outbox[0]
+
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 400
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_reset_password_token(self):
+        default_token = default_token_generator.make_token(self.user)
+        assert not reset_password_token_generator.check_token(self.user, default_token)
+
+        self.user.reset_mail_sent = timezone.now()
+        my_token = reset_password_token_generator.make_token(self.user)
+        assert reset_password_token_generator.check_token(self.user, my_token)
+
+        # test when a new reset_mail is sent, old token is expired
+        self.user.reset_mail_sent = timezone.now() + timedelta(minutes=1)
+        assert not reset_password_token_generator.check_token(self.user, my_token)
+
+        # test when password is changed, old token is expired
+        self.user.reset_mail_sent = None
+        self.user.password_updated_at = timezone.now()
+        assert not reset_password_token_generator.check_token(self.user, my_token)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_reset_password(self):
         url = '/api/reset_password'
-        token = default_token_generator.make_token(self.user)
+        token = reset_password_token_generator.make_token(self.user)
         data = {
             "uid": self.user.id,
             "token": token,
@@ -137,6 +176,26 @@ class UserTest(TestCase):
         user = User.objects.get(id=self.user.id)
         assert user.check_password("new_password")
         assert user.password_updated_at
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_reset_password_again_with_same_token_after_changed(self):
+        url = '/api/reset_password'
+        token = reset_password_token_generator.make_token(self.user)
+        data = {
+            "uid": self.user.id,
+            "token": token,
+            "password": "new_password"
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        user = User.objects.get(id=self.user.id)
+        assert user.check_password("new_password")
+        assert user.password_updated_at
+
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 400
 
     @override_settings(DEBUG=True)
     @debugger_queries
