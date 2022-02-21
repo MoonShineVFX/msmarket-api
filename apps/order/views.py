@@ -486,6 +486,7 @@ class CreateEZPayInvoiceFromOrder(APIView, EZPayInvoiceMixin):
 
         order = get_object_or_404(Order, id=order_id)
         result = self.call_invoice_api_and_save(order=order)
+        order.save()
         return Response(result, status=status.HTTP_200_OK)
 
 
