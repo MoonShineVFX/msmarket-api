@@ -127,6 +127,9 @@ class EZPayInvoiceMixin(object):
         return urlencode(post_data)
 
     def call_invoice_api_and_save(self, order):
+        """
+        save invoice or invoice_error, set order params without save
+        """
         if order.invoice_number:
             return
         post_data = self.get_post_data(order)
@@ -165,10 +168,10 @@ class EZPayInvoiceMixin(object):
                     invoice_data["order_id"] = order.id if order else None
                     invoice_data["payment_id"] = order.success_payment_id if order else None
                     invoice = Invoice.objects.create(**invoice_data)
-                    Order.objects.filter(id=order.id).update(invoice_number=invoice_data["invoice_number"])
+                    order.invoice_number = invoice_data["invoice_number"]
             else:
                 invoice_error = InvoiceError.objects.create(**validated_data)
-                Order.objects.filter(id=order.id).update(invoice_counter=F("invoice_counter") + 1)
+                order.invoice_counter = order.invoice_counter + 1
         else:
             print(result_serializer.errors)
 
@@ -385,10 +388,12 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
                     order.paid_by = payment.payment_type
                     order.success_payment_id = payment.id
                     if not order.invoice_number:
+                        # 新增發票 不會存order
                         self.call_invoice_api_and_save(order=order)
 
             else:
                 order.status = Order.FAIL
+            # order更新部份一次儲存
             order.save()
 
             return Response(serializer.data, status=status.HTTP_200_OK)

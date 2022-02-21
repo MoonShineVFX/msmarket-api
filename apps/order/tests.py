@@ -609,6 +609,7 @@ class OrderTest(TestCase):
         data = "Status=LIB10003&Message=%E8%A9%B2%E7%AD%86%E8%87%AA%E8%A8%82%E5%96%AE%E8%99%9F%E5%B7%B2%E9%87%8D%E8%A6%86%E9%96%8B%E7%AB%8B%E7%99%BC%E7%A5%A8%EF%BC%8C%E8%AB%8B%E7%A2%BA%E8%AA%8D"
         EZPayInvoiceMixin().handle_str_response(data=data, order=order)
         assert InvoiceError.objects.filter(status='LIB10003').exists()
+        assert order.invoice_counter == 2
 
     @override_settings(EZPAY_ID="3502275")
     @override_settings(DEBUG=True)
@@ -633,7 +634,7 @@ class OrderTest(TestCase):
         EZPayInvoiceMixin().handle_str_response(data=data, order=order)
         assert Invoice.objects.filter(
             invoice_number="DS12223164", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
-        assert Order.objects.filter(id=order.id, invoice_number="DS12223164").exists()
+        assert order.invoice_number == "DS12223164"
 
     @debugger_queries
     def test_test_cookie(self):
