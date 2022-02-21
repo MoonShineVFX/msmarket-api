@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     #'dj_rest_auth',
     #'dj_rest_auth.registration',
+
+    'modeltranslation',
 ]
 
 SITE_ID = 1
@@ -68,11 +70,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.common.CommonMiddleware',
+    'django.middleware.common.ComonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware'
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -283,6 +286,13 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 API_HOST = os.environ.get('API_HOST', 'localhost')
 PASSWORD_RESET_TIMEOUT = 1800 # 30 min in seconds
 
+
+# django-modeltranslation
+gettext = lambda s: s
+LANGUAGES = (
+    ('zh', gettext('Chinese')), # The first language is treated as the default language.
+    ('en', gettext('English')),
+)
 
 # Query logger
 LOGGING = {
