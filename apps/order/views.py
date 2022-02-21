@@ -176,9 +176,8 @@ class EZPayInvoiceMixin(object):
             print(result_serializer.errors)
 
 
-class OrderCreate(APIView):
-    authentication_classes = [CustomerJWTAuthentication]
-    permission_classes = (IsAuthenticated, )
+class NewebpayMixin(object):
+    version = "2.0"
 
     def get_trade_info_query_string(self, order):
         trade_info_dict = {
@@ -188,7 +187,7 @@ class OrderCreate(APIView):
             "TimeStamp": timezone.now().timestamp(),
             "RespondType": "JSON",
             "Amt": int(order.amount),  # 訂單金額
-            "Version": "1.6",
+            "Version": self.version,
             "ItemDesc": "第一次串接就成功！",
             "Email": order.user.email,
             "LoginType": 0,
@@ -202,6 +201,24 @@ class OrderCreate(APIView):
             "NotifyURL": "https://{}/api/newebpay_payment_notify".format(settings.API_HOST),
         }
         return urlencode(trade_info_dict)
+
+    def get_newebpay_payment_request_data(self, order):
+        trade_info = self.get_trade_info_query_string(order=order)
+        encrypted_trade_info = newepay_cipher.encrypt(raw=trade_info)
+        trade_sha = add_keyIV_and_encrypt_with_SHA256(data=encrypted_trade_info)
+
+        payment_request_data = {
+            "MerchantID": settings.NEWEBPAY_ID,
+            "TradeInfo": encrypted_trade_info,
+            "TradeSha": trade_sha,  # TradeInfo 經 AES 加密後再 SHA256 加密,
+            "Version": self.version,
+        }
+        return payment_request_data
+
+
+class OrderCreate(APIView, NewebpayMixin):
+    authentication_classes = [CustomerJWTAuthentication]
+    permission_classes = (IsAuthenticated, )
 
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
@@ -236,16 +253,19 @@ class OrderCreate(APIView):
         # 清除購物車已下單商品
         Cart.objects.filter(id__in=cart_ids, user=request.user).delete()
 
-        trade_info = self.get_trade_info_query_string(order=order)
-        encrypted_trade_info = newepay_cipher.encrypt(raw=trade_info)
-        trade_sha = add_keyIV_and_encrypt_with_SHA256(data=encrypted_trade_info)
+        payment_request_data = self.get_newebpay_payment_request_data(order=order)
+        return Response(data=payment_request_data, status=status.HTTP_200_OK)
 
-        payment_request_data = {
-            "MerchantID": settings.NEWEBPAY_ID,
-            "TradeInfo": encrypted_trade_info,
-            "TradeSha": trade_sha,  # TradeInfo 經 AES 加密後再 SHA256 加密,
-            "Version": "1.6",
-        }
+
+class GetNewebpayDataFromOrder(APIView, NewebpayMixin):
+    authentication_classes = [CustomerJWTAuthentication]
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request, *args, **kwargs):
+        order_id = self.request.data.get('id', None)
+        order = get_object_or_404(Order, id=order_id, user_id=self.request.user.id)
+
+        payment_request_data = self.get_newebpay_payment_request_data(order=order)
         return Response(data=payment_request_data, status=status.HTTP_200_OK)
 
 
