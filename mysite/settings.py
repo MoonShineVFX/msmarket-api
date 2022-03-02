@@ -238,6 +238,9 @@ MEDIA_SERVICE_ACCOUNT_SECRET = os.environ.get('MEDIA_SERVICE_ACCOUNT_SECRET', No
 if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
+# Google reCAPTCHA
+GOOGLE_RECAPTCHA_SECRET_KEY = os.environ.get('GOOGLE_RECAPTCHA_SECRET_KEY', None)
+
 # url path for image on gcp
 IMAGE_ROOT = 'https://market-dev.moonshine.tw'
 

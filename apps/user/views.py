@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
+from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication, recaptcha_valid_or_401
 from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import AnonRateThrottle
@@ -54,6 +54,8 @@ class ObtainTokenView(APIView):
         return self.post(request)
 
     def post(self, request):
+        recaptcha_valid_or_401(request.data)
+
         user = request.user
         refresh = RefreshToken.for_user(user)
         refresh['scope'] = "customer"
@@ -77,6 +79,8 @@ class AdminObtainTokenView(APIView):
         return self.post(request)
 
     def post(self, request):
+        recaptcha_valid_or_401(request.data)
+
         user = request.user
         refresh = RefreshToken.for_user(user)
         refresh['scope'] = "admin"

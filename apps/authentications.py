@@ -1,7 +1,9 @@
+import requests
+from django.conf import settings
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils.translation import gettext_lazy as _
 
-from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
 
 
 class AdminJWTAuthentication(JWTAuthentication):
@@ -38,3 +40,17 @@ class CustomerJWTAuthentication(JWTAuthentication):
             raise InvalidToken(_('Invalid scope'))
 
         return user
+
+
+def recaptcha_valid_or_401(body):
+    recaptcha_response = body.get('g-recaptcha-response')
+    url = 'https://www.google.com/recaptcha/api/siteverify'
+    values = {
+        'secret': settings.GOOGLE_RECAPTCHA_SECRET_KEY,
+        'response': recaptcha_response
+    }
+    response = requests.post(url, data=values, timeout=3)
+
+    if response.json().get("success", False):
+        return
+    raise AuthenticationFailed('Invalid reCAPTCHA.')
