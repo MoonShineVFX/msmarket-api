@@ -35,7 +35,7 @@ class ForgetPasswordSerializer(serializers.Serializer):
 
 
 class ResetPasswordSerializer(serializers.Serializer):
-    uid = serializers.IntegerField()
+    uid = serializers.CharField()
     token = serializers.CharField()
     password = serializers.CharField()
 

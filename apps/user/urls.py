@@ -5,6 +5,8 @@ from . import views
 
 urlpatterns = [
     url(r'^register$', views.RegisterView.as_view(), name='register'),
+    url(r'^active_account$',
+        views.ActiveAccountView.as_view(), name='active-account'),
     url(r'^login$', views.ObtainTokenView.as_view(), name='login'),
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
     url(r'^my_account$', views.CustomerAccountDetailView.as_view(), name='customer-account-detail'),

@@ -5,8 +5,10 @@ from rest_framework.test import APIClient
 from .models import User, AdminProfile
 
 from django.core import mail
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_text
 from django.contrib.auth.tokens import default_token_generator
-from .views import reset_password_token_generator
+from .views import reset_password_token_generator, active_account_token_generator
 
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
@@ -42,6 +44,9 @@ class UserTest(TestCase):
         print(response.data)
         assert response.status_code == 200
         assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
+        assert mail.outbox[0]
+        print(mail.outbox[0].subject)
+        print(mail.outbox[0].body)
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -56,6 +61,32 @@ class UserTest(TestCase):
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 400
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_active_account(self):
+        url = '/api/register'
+        data = {
+            "realName": "realName",
+            "nickname": "nickName",
+            "email": "test@mail.com",
+            "password": "password"
+        }
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 200
+        assert mail.outbox[0]
+        print(mail.outbox[0].subject)
+
+        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com", is_active=False).first()
+        assert user
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = active_account_token_generator.make_token(user)
+
+        url = '/api/active_account?uid={}&token={}'.format(uid, token)
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200
+        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com", is_active=True).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -166,7 +197,7 @@ class UserTest(TestCase):
         url = '/api/reset_password'
         token = reset_password_token_generator.make_token(self.user)
         data = {
-            "uid": self.user.id,
+            "uid": urlsafe_base64_encode(force_bytes(self.user.pk)),
             "token": token,
             "password": "new_password"
         }
@@ -183,7 +214,7 @@ class UserTest(TestCase):
         url = '/api/reset_password'
         token = reset_password_token_generator.make_token(self.user)
         data = {
-            "uid": self.user.id,
+            "uid": urlsafe_base64_encode(force_bytes(self.user.pk)),
             "token": token,
             "password": "new_password"
         }

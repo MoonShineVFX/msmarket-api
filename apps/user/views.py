@@ -14,6 +14,8 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import AnonRateThrottle
 
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_text
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 
@@ -27,23 +29,21 @@ class RegisterView(APIView):
         serializer = serializers.RegisterCustomerSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            refresh = RefreshToken.for_user(user)
-            token = str(refresh.access_token)
-            self.merge_cart(user=user)
+            self.send_active_mail(user=user)
             response = Response({}, status=status.HTTP_200_OK)
-            response.set_cookie(key="token", value=token, httponly=False, max_age=60 * 60, secure=False,
-                                samesite="Strict")
             return response
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def merge_cart(self, user=None):
-        """
-        當初次登入時合併訪客購物車
-        """
-        user = user if user else self.request.user
-        if "token" not in self.request.COOKIES and self.request.session.session_key:
-            Cart.objects.filter(session_key=self.request.session.session_key).update(user=user)
+    def send_active_mail(self, user):
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = active_account_token_generator.make_token(user)
+        body = '親愛的會員您好：\n' \
+               '收到這封電子郵件，表示您註冊本網站會員，若您未使用此功能，表示有其他人輸入錯誤信箱。\n' \
+               '帳號啟用信網址，點擊後啟用帳號: {0}/active_account?uid={1}&token={2}\n' \
+               '＊網址有效期限為系統發行1天內\n' \
+               '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, uid, token)
+        send_mail('moonshine模型庫 帳號啟用信', body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
 
 
 class ObtainTokenView(APIView):
@@ -117,7 +117,16 @@ class TimeLimitedTokenGenerator(PasswordResetTokenGenerator):
         return f'{user.pk}{user.password}login_timestamp={login_timestamp}{timestamp}{email}password_updated_at={password_updated_at}reset_mail_sent={reset_mail_sent}'
 
 
+class ActiveAccountTokenGenerator(PasswordResetTokenGenerator):
+    def _make_hash_value(self, user, timestamp):
+        email_field = user.get_email_field_name()
+        email = getattr(user, email_field, '') or ''
+        is_active = user.is_active
+        return f'{user.pk}is_active={is_active}{timestamp}{email}'
+
+
 reset_password_token_generator = TimeLimitedTokenGenerator()
+active_account_token_generator = ActiveAccountTokenGenerator()
 
 
 class ForgetPasswordView(APIView):
@@ -135,12 +144,13 @@ class ForgetPasswordView(APIView):
 
                 user.reset_mail_sent = timezone.now()
                 user.save(update_fields=['reset_mail_sent'])
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = reset_password_token_generator.make_token(user)
                 body = '親愛的會員您好：\n' \
                        '收到這封電子郵件，表示您嘗試透過忘記密碼功能重置密碼，若您未使用此功能，表示有其他人輸入錯誤信箱，請直接刪除即可。\n' \
                        '密碼重置網址，點擊後重置密碼: {0}/reset_password?uid={1}&token={2}\n' \
                        '＊網址有效期限為系統發行3天內\n' \
-                       '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, user.id, token)
+                       '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, uid, token)
                 send_mail('moonshine模型庫 忘記密碼重置信', body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
 
             return Response(status=status.HTTP_200_OK)
@@ -153,15 +163,39 @@ class ResetPasswordView(APIView):
     def post(self, request):
         serializer = serializers.ResetPasswordSerializer(data=request.data)
         if serializer.is_valid():
-            uid = serializer.validated_data['uid']
+            uidb64 = serializer.validated_data['uid']
             token = serializer.validated_data['token']
             password = serializer.validated_data['password']
-            user = User.objects.filter(id=uid).first()
+
+            try:
+                uid = force_text(urlsafe_base64_decode(uidb64))
+                user = User.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist) as e:
+                user = None
 
             if user and reset_password_token_generator.check_token(user, token):
                 user.set_password(password)
                 user.password_updated_at = timezone.now()
-                user.save()
+                user.save(update_fields=["password", "password_updated_at"])
+                return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class ActiveAccountView(APIView):
+    throttle_classes = [AnonRateThrottle]
+
+    def get(self, request):
+        uidb64 = request.GET.get('uid', None)
+        token = request.GET.get('token', None)
+        if uidb64 and token:
+            try:
+                uid = force_text(urlsafe_base64_decode(uidb64))
+                user = User.objects.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, User.DoesNotExist) as e:
+                user = None
+            if user and active_account_token_generator.check_token(user, token):
+                user.is_active = True
+                user.save(update_fields=["is_active"])
                 return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 

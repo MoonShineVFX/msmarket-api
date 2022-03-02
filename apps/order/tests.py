@@ -473,25 +473,6 @@ class OrderTest(TestCase):
         assert Cart.objects.filter(product_id=2, user=self.user).exists()
         assert Cart.objects.filter(user=self.user).count() == 2
 
-    @override_settings(DEBUG=True)
-    @debugger_queries
-    def test_register_merge_cart(self):
-        session = self.client.session
-        Cart.objects.create(session_key=session.session_key, product_id=1)
-
-        url = '/api/register'
-        data = {
-            "realName": "realName",
-            "nickname": "nickName",
-            "email": "test@mail.com",
-            "password": "password"
-        }
-        response = self.client.post(url, data=data, format="json")
-        print(response.data)
-        assert response.status_code == 200
-        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").first()
-        assert user is not None
-        assert Cart.objects.filter(product_id=1, session_key=session.session_key, user=user).exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
