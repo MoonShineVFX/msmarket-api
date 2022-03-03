@@ -43,14 +43,15 @@ class CustomerJWTAuthentication(JWTAuthentication):
 
 
 def recaptcha_valid_or_401(body):
-    recaptcha_response = body.get('g-recaptcha-response')
-    url = 'https://www.google.com/recaptcha/api/siteverify'
-    values = {
-        'secret': settings.GOOGLE_RECAPTCHA_SECRET_KEY,
-        'response': recaptcha_response
-    }
-    response = requests.post(url, data=values, timeout=3)
+    recaptcha_response = body.get('recaptcha', None)
+    if recaptcha_response:
+        url = 'https://www.google.com/recaptcha/api/siteverify'
+        values = {
+            'secret': settings.GOOGLE_RECAPTCHA_SECRET_KEY,
+            'response': recaptcha_response
+        }
+        response = requests.post(url, data=values, timeout=3)
 
-    if response.json().get("success", False):
-        return
+        if response.json().get("success", False):
+            return
     raise AuthenticationFailed('Invalid reCAPTCHA.')
