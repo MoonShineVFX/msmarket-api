@@ -110,9 +110,11 @@ class UserTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_login(self):
+        self.body = {'recaptcha': '123'}
+
         url = '/api/login'
         self.client.force_authenticate(user=self.user)
-        response = self.client.post(url)
+        response = self.client.post(url, data=self.body, format='json')
         print(response.data)
         assert response.status_code == 200
 

@@ -79,8 +79,6 @@ class AdminObtainTokenView(APIView):
         return self.post(request)
 
     def post(self, request):
-        recaptcha_valid_or_401(request.data)
-
         user = request.user
         refresh = RefreshToken.for_user(user)
         refresh['scope'] = "admin"
