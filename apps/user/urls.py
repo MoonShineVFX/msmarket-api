@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.conf.urls import url, include
 from . import views
 from dj_rest_auth.registration.views import RegisterView, VerifyEmailView
 from dj_rest_auth.views import LoginView, PasswordResetView, PasswordResetConfirmView
@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
 
     url('^google_login',  views.GoogleLogin.as_view(), name='google-login'),
+    url(r'^accounts/', include('allauth.urls'), name='socialaccount_signup'), # for socialaccount_signup reverse
 
     url(r'^my_account$', views.CustomerAccountDetailView.as_view(), name='customer-account-detail'),
     url(r'^account_update$', views.CustomerAccountUpdateView.as_view(), name='customer-account-update'),
