@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 from .models import User, AdminProfile
-
+from allauth.account.models import EmailAddress
 from django.core import mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_text
@@ -44,6 +44,7 @@ class UserTest(TestCase):
         print(response.data)
         assert response.status_code == 200
         assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
+        assert EmailAddress.objects.filter(email="test@mail.com", primary=True, verified=False).exists()
         assert mail.outbox[0]
         print(mail.outbox[0].subject)
         print(mail.outbox[0].body)
@@ -77,8 +78,9 @@ class UserTest(TestCase):
         assert mail.outbox[0]
         print(mail.outbox[0].subject)
 
-        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com", is_active=False).first()
+        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").first()
         assert user
+        assert not user.is_active
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = active_account_token_generator.make_token(user)
 
@@ -86,7 +88,9 @@ class UserTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
-        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com", is_active=True).exists()
+        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
+        assert EmailAddress.objects.filter(email="test@mail.com", primary=True, verified=True).exists()
+        assert user.is_active
 
     @override_settings(DEBUG=True)
     @debugger_queries

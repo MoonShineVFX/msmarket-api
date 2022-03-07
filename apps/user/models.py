@@ -10,7 +10,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_staff = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False, blank=True)
-    is_active = models.BooleanField(default=False, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(null=True)
@@ -33,6 +32,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def username(self):
         return self.email
+
+    @property
+    def is_active(self):
+        if self.is_staff:
+            return True
+        else:
+            return self.emailaddress_set.first().verified if self.emailaddress_set.first() else False
 
     @property
     def account(self):

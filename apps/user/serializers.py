@@ -5,6 +5,7 @@ from rest_framework.serializers import ValidationError
 from ..serializers import EditorBaseSerializer
 from rest_framework import serializers
 from .models import User, AdminProfile
+from allauth.account.models import EmailAddress
 
 
 class RegisterCustomerSerializer(serializers.Serializer):
@@ -25,6 +26,7 @@ class RegisterCustomerSerializer(serializers.Serializer):
         password = validated_data.pop('password')
 
         user = User.objects.create(name=name, nick_name=nick_name, email=email)
+        email = EmailAddress.objects.create(user=user, email=email, primary=True)
         user.set_password(raw_password=password)
         user.save(update_fields=['password'])
         return user

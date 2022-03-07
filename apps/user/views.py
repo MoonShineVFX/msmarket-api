@@ -21,6 +21,7 @@ from django.core.mail import send_mail
 
 from .models import User, AdminProfile
 from ..order.models import Cart
+from allauth.account.models import EmailAddress
 from . import serializers
 
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
@@ -200,8 +201,7 @@ class ActiveAccountView(APIView):
             except (TypeError, ValueError, OverflowError, User.DoesNotExist) as e:
                 user = None
             if user and active_account_token_generator.check_token(user, token):
-                user.is_active = True
-                user.save(update_fields=["is_active"])
+                EmailAddress.objects.filter(user_id=user.id, email=user.email).update(verified=True)
                 return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
