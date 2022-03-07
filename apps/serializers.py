@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class EditorBaseSerializer(serializers.ModelSerializer):
@@ -19,3 +21,11 @@ class EditorBaseSerializer(serializers.ModelSerializer):
 
     def get_updater(self, instance):
         return instance.updater.username if instance.updater else ""
+
+
+class CustomerTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        refresh = RefreshToken.for_user(user)
+        refresh['scope'] = "customer"
+        return refresh

@@ -133,6 +133,13 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_rest_login_token(self):
+        from dj_rest_auth.utils import jwt_encode
+        self.access_token, self.refresh_token = jwt_encode(self.user)
+        print(self.access_token)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_JWT_scope(self):
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(self.user)

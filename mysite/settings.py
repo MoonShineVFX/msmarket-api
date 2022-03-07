@@ -113,7 +113,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        #'rest_framework_simplejwt.authentication.JWTAuthentication',
         'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     ),
     'DEFAULT_THROTTLE_RATES': {
@@ -277,6 +277,10 @@ REST_AUTH_TOKEN_MODEL = None
 JWT_AUTH_COOKIE = "token"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "email"
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+
+REST_AUTH_SERIALIZERS = {
+    "JWT_TOKEN_CLAIMS_SERIALIZER": "apps.serializers.CustomerTokenObtainPairSerializer"
+}
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
