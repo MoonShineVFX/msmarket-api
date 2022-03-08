@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
 
 
-class AdminJWTAuthentication(JWTAuthentication):
+class AdminJWTAuthentication(JWTCookieAuthentication):
     scope = "admin"
 
     def get_user(self, validated_token):

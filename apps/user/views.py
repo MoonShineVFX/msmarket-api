@@ -275,7 +275,7 @@ class AdminUserUpdate(PostUpdateView):
     queryset = admin_queryset
 
 
-CALLBACK_URL_YOU_SET_ON_GOOGLE = settings.API_HOST + "/login_callback"
+CALLBACK_URL_YOU_SET_ON_GOOGLE = settings.API_HOST
 
 
 class GoogleLogin(SocialLoginView):
