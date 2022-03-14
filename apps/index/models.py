@@ -10,7 +10,8 @@ from django.conf import settings
 class Banner(EditorBaseModel):
     title = models.CharField(max_length=200)
     image = models.ImageField(null=True, upload_to='static-storage/index/banners')
-    detail = models.TextField(null=True, default="")
+    mobile_image = models.ImageField(null=True, upload_to='static-storage/index/banners')
+    description = models.TextField(null=True, default="")
     link = models.URLField(null=True)
 
     is_active = models.BooleanField(default=False)

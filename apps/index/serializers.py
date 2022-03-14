@@ -8,13 +8,17 @@ from .models import Tutorial, AboutUs, Banner, Privacy
 
 class IndexBannerSerializer(ProductListSerializer):
     imgUrl = serializers.SerializerMethodField()
+    mobileImgUrl = serializers.SerializerMethodField()
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'detail', 'imgUrl', 'link')
+        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link')
 
     def get_imgUrl(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
+
+    def get_mobileImgUrl(self, instance):
+        return "{}/{}".format(settings.IMAGE_ROOT, instance.mobile_image) if instance.mobile_image else None
 
 
 class AboutUsSerializer(serializers.ModelSerializer):
@@ -82,17 +86,18 @@ class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveM
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'detail', 'imgUrl', 'link',
+        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
 
 class AdminBannerCreateSerializer(AdminBannerSerializer):
-    file = serializers.ImageField(write_only=True, source="image")
+    image = serializers.ImageField(write_only=True)
+    mobileImage = serializers.ImageField(write_only=True, source="mobile_image")
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'detail', 'file', 'link', 'imgUrl',
+        fields = ('id', 'title', 'description', 'image', "mobileImage", 'link', 'imgUrl', 'mobileImgUrl',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
@@ -101,9 +106,9 @@ class AdminBannerActiveSerializer(AdminBannerSerializer):
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'detail', 'link', 'imgUrl',
+        fields = ('id', 'title', 'description', 'link', 'imgUrl', 'mobileImgUrl',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
-        read_only_fields = ('id', 'title', 'detail', 'link', 'imgUrl',
+        read_only_fields = ('id', 'title', 'description', 'link', 'imgUrl', 'mobileImgUrl',
                             "createTime", "updateTime", "creator", "updater",
                             'activeTime', 'inactiveTime')

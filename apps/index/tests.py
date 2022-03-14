@@ -205,7 +205,8 @@ class IndexTest(TestCase):
         url = '/api/admin_banner_create'
         data = {
             "title": "標題",
-            "file": get_test_image_file(),
+            "image": get_test_image_file(),
+            "mobileImage": get_test_image_file(),
             "link": "https://www.facebook.com",
             'description': "des",
             "isActive": True
@@ -226,7 +227,7 @@ class IndexTest(TestCase):
         data = {
             "id": 1,
             "title": "新標題",
-            "file": get_test_image_file(),
+            "image": get_test_image_file(),
             "link": "https://www.facebook.com",
             "isActive": False
         }
