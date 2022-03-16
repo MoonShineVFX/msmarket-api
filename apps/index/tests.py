@@ -228,6 +228,7 @@ class IndexTest(TestCase):
             "id": 1,
             "title": "新標題",
             "image": get_test_image_file(),
+            "imgUrl": "https://domain.com/123.jpg",
             "link": "https://www.facebook.com",
             "isActive": False
         }

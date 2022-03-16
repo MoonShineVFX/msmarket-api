@@ -56,7 +56,7 @@ class IndexView(APIView):
 
         data = {
             "banners": serializers.IndexBannerSerializer(banners, many=True).data,
-            "newArrivals": ProductListSerializer(new_products, many=True).data,
+            "products": ProductListSerializer(new_products, many=True).data,
             "tutorials": serializers.TutorialSerializer(tutorials, many=True).data,
         }
 
