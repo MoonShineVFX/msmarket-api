@@ -1,4 +1,4 @@
-from itertools import filterfalse
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from ..authentications import AdminJWTAuthentication
@@ -66,5 +66,7 @@ class AdminLangConfigUpdateView(APIView):
         for lang in request.data:
             serializer = serializers.LangConfigSerializer(data=request.data[lang])
             serializer.is_valid()
-            LangConfig.objects.filter(lang=lang).update(**serializer.validated_data)
+            update_data = {"updated_at": timezone.now()}
+            update_data.update(serializer.validated_data)
+            LangConfig.objects.filter(lang=lang).update(**update_data)
         return Response(request.data, status=status.HTTP_200_OK)

@@ -55,6 +55,8 @@ class LangTest(TestCase):
         expect_data = data["zh"]
         expect_data.pop("wrong_config")
         assert LangConfig.objects.filter(**expect_data).exists()
+        zh_config = LangConfig.objects.filter(lang="zh").first()
+        assert zh_config.updated_at is not None
 
     @override_settings(DEBUG=True)
     @debugger_queries
