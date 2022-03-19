@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'apps.product',
     'apps.order',
     'apps.index',
+    'apps.lang',
 
     # allauth
     'allauth',

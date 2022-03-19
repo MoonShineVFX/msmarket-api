@@ -6,5 +6,5 @@ urlpatterns = [
     url(r'^api/', include('apps.order.urls')),
     url(r'^api/', include('apps.user.urls')),
     url(r'^api/', include('apps.index.urls')),
-    #url(r'^admin/', admin.site.urls),
+    url(r'^api/', include('apps.lang.urls')),
 ]
