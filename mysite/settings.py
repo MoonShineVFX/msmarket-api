@@ -50,15 +50,16 @@ INSTALLED_APPS = [
     'apps.product',
     'apps.order',
     'apps.index',
-    'apps.lang',
 
     # allauth
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
+    #'dj_rest_auth',
+    #'dj_rest_auth.registration',
+
+    'modeltranslation',
 ]
 
 SITE_ID = 1
@@ -69,11 +70,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.common.CommonMiddleware',
+    'django.middleware.common.ComonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware'
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -114,8 +116,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
-        #'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_THROTTLE_RATES': {
         'anon': '10/minute',
@@ -240,12 +241,6 @@ MEDIA_SERVICE_ACCOUNT_SECRET = os.environ.get('MEDIA_SERVICE_ACCOUNT_SECRET', No
 if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-# Google reCAPTCHA
-GOOGLE_RECAPTCHA_SECRET_KEY = os.environ.get('GOOGLE_RECAPTCHA_SECRET_KEY', None)
-if 'test' in sys.argv:
-    GOOGLE_RECAPTCHA_SECRET_KEY = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'
-
-
 # url path for image on gcp
 IMAGE_ROOT = 'https://market-dev.moonshine.tw'
 
@@ -267,9 +262,7 @@ EZPAY_HASHIV = os.environ.get('EZPAY_HASHIV', "1234567891234567")
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,  # IMPORTANT
-    'BLACKLIST_AFTER_ROTATION': True,  # IMPORTANT
-
+    'ROTATE_REFRESH_TOKENS': False,
 }
 
 # allauth and dj-rest-auth
@@ -277,23 +270,7 @@ REST_USE_JWT = True
 REST_AUTH_TOKEN_MODEL = None
 JWT_AUTH_COOKIE = "token"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "email"
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 
-REST_AUTH_SERIALIZERS = {
-    "JWT_TOKEN_CLAIMS_SERIALIZER": "apps.serializers.CustomerTokenObtainPairSerializer"
-}
-
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        }
-    }
-}
 
 # SMTP
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
@@ -309,6 +286,13 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 API_HOST = os.environ.get('API_HOST', 'localhost')
 PASSWORD_RESET_TIMEOUT = 1800 # 30 min in seconds
 
+
+# django-modeltranslation
+gettext = lambda s: s
+LANGUAGES = (
+    ('zh', gettext('Chinese')), # The first language is treated as the default language.
+    ('en', gettext('English')),
+)
 
 # Query logger
 LOGGING = {
