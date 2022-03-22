@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from ..shortcuts import PostListView, PostCreateView, PostUpdateView, CreateActiveViewMixin, UpdateActiveViewMixin
@@ -80,15 +81,13 @@ class AboutUsTranslation(APIView):
     def post(self, request, *args, **kwargs):
         instance = AboutUs.objects.first()
 
-        activate("zh")
-        zh_data = self.serializer_class(instance).data,
-        activate("en")
-        en_data = self.serializer_class(instance).data,
+        data = dict()
+        for lang in settings.LANGUAGES:
+            lang_code = lang[0]
+            activate(lang_code)
+            lang_data = self.serializer_class(instance).data,
+            data.update({lang_code: lang_data[0]})
 
-        data = {
-                "zh": zh_data,
-                "en": en_data,
-        }
         return Response(data, status=status.HTTP_200_OK)
 
 
