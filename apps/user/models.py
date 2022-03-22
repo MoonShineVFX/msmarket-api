@@ -79,8 +79,6 @@ class EditorBaseModel(models.Model):
     class Meta:
         abstract = True
 
-    objects = models.Manager()
-
 
 class CreatorBaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -91,8 +89,6 @@ class CreatorBaseModel(models.Model):
 
     class Meta:
         abstract = True
-
-    objects = models.Manager()
 
 
 class AdminProfile(EditorBaseModel):

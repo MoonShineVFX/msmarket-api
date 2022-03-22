@@ -15,13 +15,14 @@ from ..category.serializers import TagNameOnlySerializer
 from ..product.serializers import ProductListSerializer, ImagePositionTypeSerializer
 from . import serializers
 
+from django.utils.translation import get_language, activate
+
 
 class CommonView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
 
     def post(self, request):
         tags = Tag.objects.all()
-
         data = {
             "userId": request.user.id if request.user.is_authenticated else None,
             "userName": request.user.name if request.user.is_authenticated else None,
@@ -71,6 +72,24 @@ class AboutUsView(RetrieveAPIView):
 
     def post(self, request, *args, **kwargs):
         return self.get(self, request, *args, **kwargs)
+
+
+class AboutUsTranslation(APIView):
+    serializer_class = serializers.AboutUsSerializer
+
+    def post(self, request, *args, **kwargs):
+        instance = AboutUs.objects.first()
+
+        activate("zh")
+        zh_data = self.serializer_class(instance).data,
+        activate("en")
+        en_data = self.serializer_class(instance).data,
+
+        data = {
+                "zh": zh_data,
+                "en": en_data,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class PrivacyView(RetrieveAPIView):

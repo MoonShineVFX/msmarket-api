@@ -9,10 +9,12 @@ from ..product.tests import get_test_image_file
 
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
+from django.utils.translation import activate
 
 
 class IndexTest(TestCase):
     def setUp(self):
+        activate("zh")
         self.client = APIClient()
         self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
@@ -28,7 +30,7 @@ class IndexTest(TestCase):
         Banner.objects.create(id=2, title="banner02", creator=self.user, is_active=True)
         Banner.objects.create(id=3, title="banner03", creator=self.user, is_active=False)
 
-        AboutUs.objects.create(id=1, title="AboutUs", description="description", creator=self.user)
+        AboutUs.objects.create(id=1, title="關於我們", title_en="AboutUs", description="description", creator=self.user)
 
         Privacy.objects.create(id=1, detail="detail", creator=self.user)
 
@@ -256,3 +258,23 @@ class IndexTest(TestCase):
         banner = Banner.objects.filter(id=1, updater_id=self.admin.id, is_active=False).first()
         assert banner is not None
         assert banner.inactive_at is not None
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_language_from_header(self):
+        url = '/api/about_us'
+        header = {"HTTP_ACCEPT_LANGUAGE": "zh"}
+        response = self.client.post(url, **header)
+        print(response.data)
+
+        header = {"HTTP_ACCEPT_LANGUAGE": "en"}
+        response = self.client.post(url, **header)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_about_xltn(self):
+        url = '/api/about_xltn'
+        header = {"HTTP_ACCEPT_LANGUAGE": "en"}
+        response = self.client.post(url, **header)
+        print(response.data)
