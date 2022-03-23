@@ -319,7 +319,7 @@ LANGUAGES = (
     ('zh', gettext('Chinese')), # The first language is treated as the default language.
     ('en', gettext('English')),
 )
-
+MODELTRANSLATION_LANGUAGES = ('zh', 'en')
 MODELTRANSLATION_DEFAULT_LANGUAGE = 'zh'
 
 

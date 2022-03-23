@@ -2,6 +2,8 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
+    url(r'^set_language$', views.SetLanguageView.as_view(), name='set-language'),
+
     url(r'^common$', views.CommonView.as_view(), name='common'),
     url(r'^index$', views.IndexView.as_view(), name='index'),
     url(r'^about_us$', views.AboutUsView.as_view(), name='about-us'),

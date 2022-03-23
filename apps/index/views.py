@@ -19,6 +19,15 @@ from . import serializers
 from django.utils.translation import get_language, activate
 
 
+class SetLanguageView(APIView):
+    def post(self, request):
+        lang_code = request.data.get('langCode', None)
+        response = Response(status=status.HTTP_200_OK)
+        if lang_code and lang_code in settings.MODELTRANSLATION_LANGUAGES:
+            response.set_cookie(key="django_language", value=lang_code, httponly=True, secure=True, samesite="Strict")
+        return response
+
+
 class CommonView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
 

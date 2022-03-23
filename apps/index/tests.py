@@ -30,7 +30,7 @@ class IndexTest(TestCase):
         Banner.objects.create(id=2, title="banner02", creator=self.user, is_active=True)
         Banner.objects.create(id=3, title="banner03", creator=self.user, is_active=False)
 
-        AboutUs.objects.create(id=1, title="關於我們", title_en="AboutUs", description="description", creator=self.user)
+        AboutUs.objects.create(id=1, title="關於我們", title_en="AboutUs", description="簡介", creator=self.user)
 
         Privacy.objects.create(id=1, detail="detail", creator=self.user)
 
@@ -273,8 +273,40 @@ class IndexTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_set_language(self):
+        url = '/api/set_language'
+        data = {"langCode": "en"}
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        print(response.client.cookies)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_language_from_cookie(self):
+        url = '/api/about_us'
+
+        self.client.cookies["django_language"] = "en"
+        response = self.client.post(url)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_about_xltn(self):
         url = '/api/about_xltn'
-        header = {"HTTP_ACCEPT_LANGUAGE": "en"}
-        response = self.client.post(url, **header)
+
+        response = self.client.post(url)
         print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_update_about_with_xltn(self):
+        url = '/api/admin_about_update'
+        header = {"HTTP_ACCEPT_LANGUAGE": "en"}
+
+        data = {"title": "new"}
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.post(url, data=data, **header)
+        print(response.data)
+        assert response.status_code == 200
