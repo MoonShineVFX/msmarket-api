@@ -10,7 +10,7 @@ urlpatterns = [
     url(r'^privacy$', views.PrivacyView.as_view(), name='privacy'),
     url(r'^tutorials$', views.TutorialListView.as_view(), name='tutorial-list'),
 
-    url(r'^about_xltn$', views.AboutUsTranslation.as_view(), name='about-xltn'),
+    url(r'^about_xltn$', views.AboutUsXLTNView.as_view(), name='about-xltn'),
 
     url(r'^admin_common$', views.AdminCommonView.as_view(), name='admin-common'),
     url(r'^admin_about$', views.AdminAboutUsView.as_view(), name='admin-about'),

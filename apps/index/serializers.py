@@ -112,3 +112,9 @@ class AdminBannerActiveSerializer(AdminBannerSerializer):
         read_only_fields = ('id', 'title', 'description', 'link', 'imgUrl', 'mobileImgUrl',
                             "createTime", "updateTime", "creator", "updater",
                             'activeTime', 'inactiveTime')
+
+
+class AboutUsXLTNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AboutUs
+        fields = ('title', 'description', )

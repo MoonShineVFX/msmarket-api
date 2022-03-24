@@ -84,8 +84,8 @@ class AboutUsView(RetrieveAPIView):
         return self.get(self, request, *args, **kwargs)
 
 
-class AboutUsTranslation(APIView):
-    serializer_class = serializers.AboutUsSerializer
+class AboutUsXLTNView(APIView):
+    serializer_class = serializers.AboutUsXLTNSerializer
 
     def post(self, request, *args, **kwargs):
         instance = AboutUs.objects.first()
