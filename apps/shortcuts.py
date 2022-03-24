@@ -106,18 +106,36 @@ class PostCreateView(CreateAPIView):
 
 class PostUpdateView(GenericAPIView, mixins.UpdateModelMixin):
     permission_classes = (IsAuthenticated, )
+    translation_serializer_class = None
 
     def post(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
         lang_code = self.request.data.get("langCode", None)
+
+        if lang_code:
+            serializer = self.translation_serializer_class(instance=instance, data=request.data, partial=partial)
+        else:
+            serializer = self.serializer_class(instance=instance, data=request.data, partial=partial)
+
+        serializer.is_valid(raise_exception=True)
+
         if lang_code:
             activate(lang_code)
-        return self.partial_update(request, *args, **kwargs)
-    """
-    def change_update(self):
-        lang_code = self.request.data.get("langCode", None)
-        if lang_code:
-            activate(lang_code)    
-    """
+            type(instance).objects.filter(id=instance.id).update(**serializer.validated_data)
+        else:
+            self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     def perform_update(self, serializer):
         serializer.save(**{"updater_id": self.request.user.id, "updated_at": timezone.now()})
@@ -162,23 +180,28 @@ class WebCreateView(GenericAPIView):
 
 class WebUpdateView(GenericAPIView):
     permission_classes = (IsAuthenticated, )
+    translation_serializer_class = None
 
     def perform_update(self, serializer):
         serializer.save(**{"updater_id": self.request.user.id, "updated_at": timezone.now()})
 
     def post(self, request, *args, **kwargs):
+        instance = self.get_object()
         lang_code = self.request.data.get("langCode", None)
+
+        if lang_code:
+            serializer = self.translation_serializer_class(instance=instance, data=request.data, partial=True)
+        else:
+            serializer = self.serializer_class(instance=instance, data=request.data, partial=True)
+
+        serializer.is_valid(raise_exception=True)
+
         if lang_code:
             activate(lang_code)
-
-        instance = self.get_object()
-        serializer = self.serializer_class(instance=instance, data=request.data)
-        if serializer.is_valid():
-            self.perform_update(serializer)
-            data = {}
-            return Response(data, status=status.HTTP_200_OK)
+            type(instance).objects.filter(id=instance.id).update(**serializer.validated_data)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            self.perform_update(serializer)
+        return Response({}, status=status.HTTP_200_OK)
 
 
 class CreateActiveViewMixin(object):

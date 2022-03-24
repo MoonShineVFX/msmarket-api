@@ -147,6 +147,7 @@ class AdminAboutUsUpdate(PostUpdateView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminAboutUsSerializer
+    translation_serializer_class = serializers.AboutUsXLTNSerializer
 
     def get_object(self):
         return AboutUs.objects.select_related("creator", "updater").first()
@@ -168,6 +169,7 @@ class AdminPrivacyUpdate(PostUpdateView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminPrivacySerializer
+    translation_serializer_class = serializers.PrivacyXLTNSerializer
 
     def get_object(self):
         return Privacy.objects.select_related("creator", "updater").first()
@@ -191,6 +193,7 @@ class AdminTutorialUpdateView(PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminTutorialCreateSerializer
     queryset = Tutorial.objects.select_related("creator", "updater")
+    translation_serializer_class = serializers.TutorialXLTNSerializer
 
 
 class AdminBannerListView(PostListView):
@@ -211,6 +214,7 @@ class AdminBannerUpdateView(UpdateActiveViewMixin, PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminBannerCreateSerializer
     queryset = Banner.objects.select_related("creator", "updater")
+    translation_serializer_class = serializers.BannerXLTNSerializer
 
 
 class AdminBannerActiveView(PostUpdateView):
