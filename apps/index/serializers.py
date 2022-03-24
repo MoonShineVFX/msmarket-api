@@ -118,3 +118,21 @@ class AboutUsXLTNSerializer(serializers.ModelSerializer):
     class Meta:
         model = AboutUs
         fields = ('title', 'description', )
+
+
+class PrivacyXLTNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Privacy
+        fields = ('detail', )
+
+
+class TutorialXLTNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tutorial
+        fields = ('title', )
+
+
+class BannerXLTNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Banner
+        fields = ('title', 'description', )

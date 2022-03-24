@@ -11,6 +11,9 @@ urlpatterns = [
     url(r'^tutorials$', views.TutorialListView.as_view(), name='tutorial-list'),
 
     url(r'^about_xltn$', views.AboutUsXLTNView.as_view(), name='about-xltn'),
+    url(r'^privacy_xltn$', views.PrivacyXLTNView.as_view(), name='privacy-xltn'),
+    url(r'^tutorial_xltn$', views.TutorialXLTNView.as_view(), name='tutorial-xltn'),
+    url(r'^banner_xltn$', views.BannerXLTNView.as_view(), name='banner-xltn'),
 
     url(r'^admin_common$', views.AdminCommonView.as_view(), name='admin-common'),
     url(r'^admin_about$', views.AdminAboutUsView.as_view(), name='admin-about'),

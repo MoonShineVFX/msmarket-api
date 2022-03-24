@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
-from ..shortcuts import PostListView, PostCreateView, PostUpdateView, CreateActiveViewMixin, UpdateActiveViewMixin
+from ..shortcuts import PostListView, PostCreateView, PostUpdateView, CreateActiveViewMixin, UpdateActiveViewMixin, BaseXLTNView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -84,22 +84,6 @@ class AboutUsView(RetrieveAPIView):
         return self.get(self, request, *args, **kwargs)
 
 
-class AboutUsXLTNView(APIView):
-    serializer_class = serializers.AboutUsXLTNSerializer
-
-    def post(self, request, *args, **kwargs):
-        instance = AboutUs.objects.first()
-
-        data = dict()
-        for lang in settings.LANGUAGES:
-            lang_code = lang[0]
-            activate(lang_code)
-            lang_data = self.serializer_class(instance).data,
-            data.update({lang_code: lang_data[0]})
-
-        return Response(data, status=status.HTTP_200_OK)
-
-
 class PrivacyView(RetrieveAPIView):
     serializer_class = serializers.PrivacySerializer
 
@@ -121,6 +105,30 @@ class TutorialListView(GenericAPIView):
             "list": serializer.data,
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+class AboutUsXLTNView(BaseXLTNView):
+    serializer_class = serializers.AboutUsXLTNSerializer
+
+    def get_object(self):
+        return AboutUs.objects.first()
+
+
+class PrivacyXLTNView(BaseXLTNView):
+    serializer_class = serializers.PrivacyXLTNSerializer
+
+    def get_object(self):
+        return Privacy.objects.first()
+
+
+class TutorialXLTNView(BaseXLTNView):
+    serializer_class = serializers.TutorialXLTNSerializer
+    queryset = Tutorial.objects.all()
+
+
+class BannerXLTNView(BaseXLTNView):
+    serializer_class = serializers.BannerXLTNSerializer
+    queryset = Banner.objects.all()
 
 
 class AdminAboutUsView(RetrieveAPIView):

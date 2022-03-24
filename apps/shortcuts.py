@@ -3,6 +3,7 @@ import uuid
 import functools
 import time
 from django.utils import timezone
+from django.conf import settings
 
 from django.shortcuts import get_object_or_404
 from django.http import Http404
@@ -205,3 +206,22 @@ class UpdateActiveViewMixin(object):
                 data.update({"inactive_at": timezone.now()})
 
         serializer.save(**data)
+
+
+class BaseXLTNView(GenericAPIView):
+    serializer_class = None
+
+    def get_object(self):
+        return get_object_or_404(self.queryset, id=self.request.data.get('id', None))
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        data = dict()
+        for lang in settings.LANGUAGES:
+            lang_code = lang[0]
+            activate(lang_code)
+            lang_data = self.serializer_class(instance).data,
+            data.update({lang_code: lang_data[0]})
+
+        return Response(data, status=status.HTTP_200_OK)

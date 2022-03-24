@@ -290,13 +290,6 @@ class IndexTest(TestCase):
         response = self.client.post(url)
         print(response.data)
 
-    @override_settings(DEBUG=True)
-    @debugger_queries
-    def test_about_xltn(self):
-        url = '/api/about_xltn'
-
-        response = self.client.post(url)
-        print(response.data)
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -323,3 +316,35 @@ class IndexTest(TestCase):
 
         about = AboutUs.objects.raw_values().first()
         print(about)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_about_xltn(self):
+        url = '/api/about_xltn'
+
+        response = self.client.post(url)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_privacy_xltn(self):
+        url = '/api/privacy_xltn'
+
+        response = self.client.post(url)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_tutorial_xltn(self):
+        url = '/api/tutorial_xltn'
+        data = {"id": 1}
+        response = self.client.post(url, data=data)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_banner_xltn(self):
+        url = '/api/banner_xltn'
+        data = {"id": 1}
+        response = self.client.post(url, data=data)
+        print(response.data)
