@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection, reset_queries
+from django.utils.translation import activate
 
 from rest_framework.generics import GenericAPIView, CreateAPIView, DestroyAPIView
 from rest_framework import mixins
@@ -106,7 +107,16 @@ class PostUpdateView(GenericAPIView, mixins.UpdateModelMixin):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
+        lang_code = self.request.data.get("langCode", None)
+        if lang_code:
+            activate(lang_code)
         return self.partial_update(request, *args, **kwargs)
+    """
+    def change_update(self):
+        lang_code = self.request.data.get("langCode", None)
+        if lang_code:
+            activate(lang_code)    
+    """
 
     def perform_update(self, serializer):
         serializer.save(**{"updater_id": self.request.user.id, "updated_at": timezone.now()})
@@ -156,6 +166,10 @@ class WebUpdateView(GenericAPIView):
         serializer.save(**{"updater_id": self.request.user.id, "updated_at": timezone.now()})
 
     def post(self, request, *args, **kwargs):
+        lang_code = self.request.data.get("langCode", None)
+        if lang_code:
+            activate(lang_code)
+
         instance = self.get_object()
         serializer = self.serializer_class(instance=instance, data=request.data)
         if serializer.is_valid():

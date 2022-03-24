@@ -302,11 +302,24 @@ class IndexTest(TestCase):
     @debugger_queries
     def test_update_about_with_xltn(self):
         url = '/api/admin_about_update'
-        header = {"HTTP_ACCEPT_LANGUAGE": "en"}
 
-        data = {"title": "new"}
+        data = {
+            "langCode": "en",
+            "title": "new"
+                }
         self.client.force_authenticate(user=self.admin)
 
-        response = self.client.post(url, data=data, **header)
+        response = self.client.post(url, data=data)
         print(response.data)
         assert response.status_code == 200
+        about = AboutUs.objects.raw_values().first()
+        print(about)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_update_about_with_xltn_with_query(self):
+        activate("en")
+        AboutUs.objects.filter(id=1).update(**{"title": "new"})
+
+        about = AboutUs.objects.raw_values().first()
+        print(about)
