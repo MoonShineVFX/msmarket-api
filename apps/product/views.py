@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
-from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView, CreateActiveViewMixin, UpdateActiveViewMixin
+from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView, CreateActiveViewMixin, UpdateActiveViewMixin, BaseXLTNView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -39,6 +39,11 @@ class ProductDetail(RetrieveAPIView):
     serializer_class = serializers.ProductDetailSerializer
     models = Model.objects.select_related("format", "renderer")
     queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))
+
+
+class ProductXLTNView(BaseXLTNView):
+    serializer_class = serializers.ProductXLTNSerializer
+    queryset = Product.objects.all()
 
 
 class MyProductList(PostListView):
@@ -93,6 +98,7 @@ class AdminProductUpdate(UpdateActiveViewMixin, PostUpdateView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminProductCreateSerializer
+    translation_serializer_class = serializers.ProductXLTNSerializer
     queryset = Product
 
 

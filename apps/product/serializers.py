@@ -237,3 +237,9 @@ class AdminProductActiveSerializer(EditorBaseSerializer, ActiveMixin):
         model = Product
         fields = ('isActive', 'tags', 'activeTime', 'inactiveTime',
                   "createTime", "updateTime", "creator", "updater")
+
+
+class ProductXLTNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ('title', 'description', )

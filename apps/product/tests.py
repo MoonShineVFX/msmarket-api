@@ -288,3 +288,29 @@ class ProductTest(TestCase):
         response = self.client.post(url, data=data, format='json')
         print(response.data)
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_product_xltn(self):
+        url = '/api/product_xltn'
+        data = {
+            'id': 1,
+        }
+        response = self.client.post(url, data=data, format='json')
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_update_product_xltn(self):
+        url = '/api/admin_product_update'
+        data = {
+            "id": 2,
+            "langCode": "en",
+            "title": "new_title",
+            "description": "new_description",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 200
+        print(response.data)
