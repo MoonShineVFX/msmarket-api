@@ -62,6 +62,10 @@ class AdminCommonView(APIView):
 
 class IndexView(APIView):
     def post(self, request):
+        lang_code = self.request.data.get("langCode", None)
+        if lang_code:
+            activate(lang_code)
+
         banners = Banner.objects.filter(is_active=True).all()
         new_products = Product.objects.filter(is_active=True).order_by("-active_at")[:4]
         tutorials = Tutorial.objects.order_by("-created_at")[:3]
