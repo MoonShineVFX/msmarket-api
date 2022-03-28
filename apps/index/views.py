@@ -25,7 +25,6 @@ class SetLanguageView(APIView):
         response = Response(status=status.HTTP_200_OK)
         if lang_code and lang_code in settings.MODELTRANSLATION_LANGUAGES:
             response.set_cookie(key="django_language", value=lang_code, httponly=True, secure=True, samesite="Strict")
-            response.set_cookie(key="NEXT_LOCALE", value=lang_code, httponly=True, secure=True, samesite="Strict")
         return response
 
 
