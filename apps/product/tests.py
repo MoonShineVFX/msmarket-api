@@ -42,7 +42,8 @@ class ProductTest(TestCase):
         Format.objects.create(id=1, name="format01")
         Format.objects.create(id=2, name="format02")
 
-        p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
+        p1 = Product.objects.create(id=1, title="商品01", title_zh="商品01", title_en="product01",
+                                    description="", price=Decimal(1), model_size=0,
                                model_count=4, texture_size="1920x1080", is_active=True, creator_id=1)
         p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
                                model_count=4, texture_size="1920x1080", is_active=True, creator_id=1)
@@ -297,6 +298,39 @@ class ProductTest(TestCase):
             'id': 1,
         }
         response = self.client.post(url, data=data, format='json')
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_product_list_with_lang(self):
+        url = '/api/products?lang=en'
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_product_detail_with_lang(self):
+        url = '/api/products/1?lang=en'
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_get_my_products_with_lang(self):
+        order = Order.objects.create(
+            user=self.user, status=Order.SUCCESS, merchant_order_no="MSM20211201000001", amount=1000)
+        order.products.set([1, 2])
+
+        CustomerProduct.objects.create(user=self.user, order=order, product_id=1)
+        CustomerProduct.objects.create(user=self.user, order=order, product_id=2)
+
+        print("test start")
+        url = '/api/my_products?lang=en'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
 

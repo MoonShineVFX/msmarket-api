@@ -1,7 +1,11 @@
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
-from ..shortcuts import WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView, CreateActiveViewMixin, UpdateActiveViewMixin, BaseXLTNView
+from ..shortcuts import (
+    WebCreateView, PostCreateView, PostUpdateView, PostListView, PostDestroyView,
+    CreateActiveViewMixin, UpdateActiveViewMixin, BaseXLTNView,
+    RetrieveSwitchLangMixin, ListSwitchLangMixin
+)
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -15,7 +19,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 
 
-class ProductList(ListAPIView):
+class ProductList(ListSwitchLangMixin, ListAPIView):
     pagination_class = ProductPagination
     serializer_class = serializers.ProductListSerializer
     queryset = Product.objects.prefetch_related('tags').filter(is_active=True).order_by('-active_at')
@@ -35,7 +39,7 @@ class ProductList(ListAPIView):
         return queryset
 
 
-class ProductDetail(RetrieveAPIView):
+class ProductDetail(RetrieveSwitchLangMixin, RetrieveAPIView):
     serializer_class = serializers.ProductDetailSerializer
     models = Model.objects.select_related("format", "renderer")
     queryset = Product.objects.prefetch_related("tags", "images").prefetch_related(Prefetch('models', queryset=models))

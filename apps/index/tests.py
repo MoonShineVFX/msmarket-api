@@ -26,16 +26,18 @@ class IndexTest(TestCase):
         p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, creator_id=1)
 
-        Banner.objects.create(id=1, title="banner01", creator=self.user, is_active=True)
-        Banner.objects.create(id=2, title="banner02", creator=self.user, is_active=True)
-        Banner.objects.create(id=3, title="banner03", creator=self.user, is_active=False)
+        Banner.objects.create(id=1, title="輪播01", title_en="banner01", creator=self.user, is_active=True)
+        Banner.objects.create(id=2, title="輪播02", title_en="banner02", creator=self.user, is_active=True)
+        Banner.objects.create(id=3, title="輪播03", title_en="banner03", creator=self.user, is_active=False)
 
-        AboutUs.objects.create(id=1, title="關於我們", title_en="AboutUs", description="簡介", creator=self.user)
+        AboutUs.objects.create(id=1, title="關於我們", title_en="AboutUs", description="簡介",
+                               description_en="description", creator=self.user)
 
         Privacy.objects.create(id=1, detail="detail", creator=self.user)
 
-        Tutorial.objects.create(id=1, title="tutorial01", creator=self.user, link="https://medium.com")
-        Tutorial.objects.create(id=2, title="tutorial02", creator=self.user)
+        Tutorial.objects.create(id=1, title="教學01", title_en="tutorial01", creator=self.user,
+                                link="https://medium.com")
+        Tutorial.objects.create(id=2, title="教學02", title_en="tutorial02", creator=self.user)
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -290,7 +292,6 @@ class IndexTest(TestCase):
         response = self.client.post(url)
         print(response.data)
 
-
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_update_about_with_xltn(self):
@@ -347,4 +348,25 @@ class IndexTest(TestCase):
         url = '/api/banner_xltn'
         data = {"id": 1}
         response = self.client.post(url, data=data)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_index_with_lang(self):
+        url = '/api/index?lang=en'
+        response = self.client.post(url)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_about_us_with_lang(self):
+        url = '/api/about_us?lang=en'
+        response = self.client.post(url)
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_tutorials_with_lang(self):
+        url = '/api/tutorials?lang=en'
+        response = self.client.post(url)
         print(response.data)

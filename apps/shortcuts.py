@@ -75,7 +75,26 @@ def debugger_queries(func):
     return wrapper
 
 
-class PostListView(GenericAPIView):
+class SwitchLangMixin(object):
+    def set_language(self):
+        lang_code = self.request.query_params.get("lang", None)
+        if lang_code and lang_code in settings.MODELTRANSLATION_LANGUAGES:
+            activate(lang_code)
+
+
+class RetrieveSwitchLangMixin(SwitchLangMixin):
+    def get(self, request, *args, **kwargs):
+        self.set_language()
+        return self.retrieve(request, *args, **kwargs)
+
+
+class ListSwitchLangMixin(SwitchLangMixin):
+    def get(self, request, *args, **kwargs):
+        self.set_language()
+        return self.list(request, *args, **kwargs)
+
+
+class PostListView(GenericAPIView, SwitchLangMixin):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
@@ -83,6 +102,8 @@ class PostListView(GenericAPIView):
         return self.list(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
+        self.set_language()
+
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)

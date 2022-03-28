@@ -2,7 +2,10 @@ from django.utils import timezone
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
-from ..shortcuts import PostListView, PostCreateView, PostUpdateView, CreateActiveViewMixin, UpdateActiveViewMixin, BaseXLTNView
+from ..shortcuts import (
+    PostListView, PostCreateView, PostUpdateView, CreateActiveViewMixin, UpdateActiveViewMixin, BaseXLTNView,
+    ListSwitchLangMixin, RetrieveSwitchLangMixin, SwitchLangMixin
+)
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -59,12 +62,9 @@ class AdminCommonView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class IndexView(APIView):
+class IndexView(APIView, SwitchLangMixin):
     def post(self, request):
-        lang_code = self.request.data.get("langCode", None)
-        if lang_code:
-            activate(lang_code)
-
+        self.set_language()
         banners = Banner.objects.filter(is_active=True).all()
         new_products = Product.objects.filter(is_active=True).order_by("-active_at")[:4]
         tutorials = Tutorial.objects.order_by("-created_at")[:3]
@@ -78,7 +78,7 @@ class IndexView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class AboutUsView(RetrieveAPIView):
+class AboutUsView(RetrieveSwitchLangMixin, RetrieveAPIView):
     serializer_class = serializers.AboutUsSerializer
 
     def get_object(self):
@@ -88,7 +88,7 @@ class AboutUsView(RetrieveAPIView):
         return self.get(self, request, *args, **kwargs)
 
 
-class PrivacyView(RetrieveAPIView):
+class PrivacyView(RetrieveSwitchLangMixin, RetrieveAPIView):
     serializer_class = serializers.PrivacySerializer
 
     def get_object(self):
@@ -98,11 +98,12 @@ class PrivacyView(RetrieveAPIView):
         return self.get(self, request, *args, **kwargs)
 
 
-class TutorialListView(GenericAPIView):
+class TutorialListView(GenericAPIView, SwitchLangMixin):
     serializer_class = serializers.TutorialLinkSerializer
     queryset = Tutorial.objects.order_by('-created_at').all()
 
     def post(self, request, *args, **kwargs):
+        self.set_language()
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         data = {
