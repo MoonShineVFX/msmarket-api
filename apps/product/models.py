@@ -107,7 +107,7 @@ class Price(EditorBaseModel):
 @receiver(models.signals.post_delete, sender=Image)
 def auto_delete_file(sender, instance, **kargs):
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(settings.GS_PUBLIC_BUCKET_NAME)
+    bucket = storage_client.get_bucket(settings.GS_BUCKET_NAME)
     blob = bucket.blob(instance.file.name)
     try:
         blob.delete()
