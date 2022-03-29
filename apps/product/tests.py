@@ -45,7 +45,8 @@ class ProductTest(TestCase):
         p1 = Product.objects.create(id=1, title="商品01", title_zh="商品01", title_en="product01",
                                     description="", price=Decimal(1), model_size=0,
                                model_count=4, texture_size="1920x1080", is_active=True, creator_id=1)
-        p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
+        p2 = Product.objects.create(id=2, title="商品02", title_zh="商品02", title_en="product02",
+                                    description="", price=Decimal(1), model_size=0,
                                model_count=4, texture_size="1920x1080", is_active=True, creator_id=1)
         p1.tags.add(t1, t2)
         p2.tags.add(t1)
