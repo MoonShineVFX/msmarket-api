@@ -142,6 +142,20 @@ class ProductListSerializer(ListImgUrlMixin):
         fields = ('id', 'title', 'imgUrl', 'price', 'isActive')
 
 
+class RelativeProductListSerializer(serializers.ModelSerializer):
+    price = serializers.IntegerField()
+    isActive = serializers.BooleanField(source="is_active")
+    imgUrl = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ('id', 'title', 'imgUrl', 'price', 'isActive')
+
+    def get_imgUrl(self, instance):
+        image = getattr(instance, "extend_image", None)
+        return "{}/{}".format(settings.IMAGE_ROOT, image.file) if image else None
+
+
 class OrderProductSerializer(ProductListSerializer):
     class Meta:
         model = Product
@@ -185,7 +199,7 @@ class ProductDetailSerializer(DetailImgUrlMixin):
 
     def get_relativeProducts(self, instance):
         products = Product.objects.filter(~Q(id=instance.id), tags__in=instance.tags.all())[:4]
-        return ProductListSerializer(products, many=True).data
+        return RelativeProductListSerializer(products, many=True).data
 
     def get_previews(self, instance):
         previews = [image for image in instance.images.all() if image.position_id == Image.PREVIEW]
