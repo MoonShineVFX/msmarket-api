@@ -105,7 +105,7 @@ class ProductTest(TestCase):
         CustomerProduct.objects.create(user=self.user, order=order, product_id=2)
 
         print("test start")
-        url = '/api/my_products'
+        url = '/api/my_products?lang=en'
         self.client.force_authenticate(user=self.user)
         response = self.client.get(url)
         print(response.data)

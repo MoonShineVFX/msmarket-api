@@ -28,9 +28,11 @@ class OrderTest(TestCase):
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
 
-        p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
+        p1 = Product.objects.create(id=1, title="商品01", title_zh="商品01", title_en="product01", description="",
+                                    price=Decimal(1), model_size=0,
                                     model_count=4, texture_size="1800x1800", creator_id=1)
-        p2 = Product.objects.create(id=2, title="product02", description="", price=Decimal(1), model_size=0,
+        p2 = Product.objects.create(id=2, title="商品02", title_zh="商品02", title_en="product02", description="",
+                                    price=Decimal(1), model_size=0,
                                     model_count=4, texture_size="1800x1800", creator_id=1)
 
     def test_encrypt_with_AES_and_SHA(self):
@@ -281,7 +283,7 @@ class OrderTest(TestCase):
         order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
         order.products.set([1, 2])
 
-        url = '/api/orders/{}'.format(merchant_order_no)
+        url = '/api/orders/{}?lang=en'.format(merchant_order_no)
         self.client.force_authenticate(user=self.user)
         response = self.client.get(url)
         assert response.status_code == 200
@@ -360,7 +362,7 @@ class OrderTest(TestCase):
         Cart.objects.create(user_id=1, product_id=1)
         Cart.objects.create(user_id=1, product_id=2)
 
-        url = '/api/cart_products'
+        url = '/api/cart_products?lang=en'
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url)
         print(response.data)
@@ -472,7 +474,6 @@ class OrderTest(TestCase):
         assert response.status_code == 201
         assert Cart.objects.filter(product_id=2, user=self.user).exists()
         assert Cart.objects.filter(user=self.user).count() == 2
-
 
     @override_settings(DEBUG=True)
     @debugger_queries

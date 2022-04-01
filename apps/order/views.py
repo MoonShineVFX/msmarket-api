@@ -10,7 +10,7 @@ from django.db.models import F
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView, GenericAPIView
-from ..shortcuts import PostDestroyView
+from ..shortcuts import PostDestroyView, SwitchLangMixin
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
@@ -289,13 +289,14 @@ class OrderList(GenericAPIView):
         return Order.objects.filter(user=self.request.user).order_by("-created_at")
 
 
-class OrderDetail(GenericAPIView):
+class OrderDetail(GenericAPIView, SwitchLangMixin):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
     serializer_class = serializers.OrderDetailSerializer
     queryset = Order.objects.prefetch_related("products")
 
     def get(self, request, order_number, *args, **kwargs):
+        self.set_language()
         order = get_object_or_404(self.queryset, merchant_order_no=order_number)
         serializer = self.serializer_class(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -428,11 +429,12 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
             return None, False
 
 
-class CartProductList(GenericAPIView):
+class CartProductList(GenericAPIView, SwitchLangMixin):
     authentication_classes = [CustomerJWTAuthentication]
     serializer_class = serializers.CartProductListSerializer
 
     def post(self, request, *args, **kwargs):
+        self.set_language()
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         data = {
