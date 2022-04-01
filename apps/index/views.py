@@ -14,6 +14,7 @@ from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 from .models import Banner, Tutorial, AboutUs, Privacy
 from ..product.models import Product, Image
 from ..category.models import Tag
+from ..lang.models import LangConfig
 
 from ..category.serializers import TagNameOnlySerializer
 from ..product.serializers import ProductListSerializer, ImagePositionTypeSerializer
@@ -36,10 +37,12 @@ class CommonView(APIView):
 
     def post(self, request):
         tags = Tag.objects.all()
+        lang_config = LangConfig.objects.only('updated_at').latest('updated_at')
         data = {
             "userId": request.user.id if request.user.is_authenticated else None,
             "userName": request.user.name if request.user.is_authenticated else None,
             "tags": TagNameOnlySerializer(tags, many=True).data,
+            "langConfigUpdatedAt": lang_config.updated_at
         }
 
         return Response(data, status=status.HTTP_200_OK)

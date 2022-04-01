@@ -1,4 +1,5 @@
 from decimal import Decimal
+import datetime
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -16,10 +17,13 @@ class LangTest(TestCase):
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         LangConfig.objects.create(lang="zh", menu_store="商店", text_signin="登入",
                                   product_detail_format_and_renderer="軟體格式與算圖引擎",
-                                  product_detail_notice_message="購買後，可以在我的模型庫下載其他檔案格式")
+                                  product_detail_notice_message="購買後，可以在我的模型庫下載其他檔案格式",
+                                  updated_at="2020-10-01 00:00:00")
+
         LangConfig.objects.create(lang="en", menu_store="menu_store", text_signin="text_signin",
                                   product_detail_format_and_renderer="product_detail_format_and_renderer",
-                                  product_detail_notice_message="product_detail_notice_message")
+                                  product_detail_notice_message="product_detail_notice_message",
+                                  updated_at="2020-01-01 00:00:00")
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -27,6 +31,7 @@ class LangTest(TestCase):
         url = '/api/lang_configs'
         response = self.client.post(url)
         print(response.data)
+        assert str(response.data["updatedAt"]) == "2020-10-01 00:00:00+00:00"
         assert response.status_code == 200
 
     @override_settings(DEBUG=True)

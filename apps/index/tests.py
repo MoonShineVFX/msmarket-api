@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from ..category.models import Tag
 from ..user.models import User
 from ..product.models import Product
+from ..lang.models import LangConfig
 from .models import Banner, Tutorial, AboutUs, Privacy
 from ..product.tests import get_test_image_file
 
@@ -20,6 +21,9 @@ class IndexTest(TestCase):
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         Tag.objects.create(id=1, name="tag01", creator=self.user)
         Tag.objects.create(id=2, name="tag02", creator=self.user)
+
+        LangConfig.objects.create(lang="zh", updated_at="2020-10-01 00:00:00")
+        LangConfig.objects.create(lang="en", updated_at="2020-01-01 00:00:00")
 
         p1 = Product.objects.create(id=1, title="product01", description="", price=Decimal(1), model_size=0,
                                     model_count=4, texture_size=0, creator_id=1)
