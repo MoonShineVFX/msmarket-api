@@ -17,15 +17,8 @@ class LangConfigListView(APIView):
     def post(self, request, *args, **kwargs):
         lang_configs = LangConfig.objects.all()
         data = dict()
-        updated_at = None
         for lang in lang_configs:
             data[lang.lang] = serializers.LangConfigSerializer(lang).data
-
-            if not updated_at:
-                updated_at = lang.updated_at
-            elif lang.updated_at > updated_at:
-                updated_at = lang.updated_at
-        data["updatedAt"] = updated_at
         return Response(data, status=status.HTTP_200_OK)
 
 
