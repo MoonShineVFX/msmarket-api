@@ -23,7 +23,7 @@ class Tutorial(EditorBaseModel):
     title = models.CharField(max_length=200)
     description = models.TextField(null=True, default="")
     image = models.ImageField(null=True, upload_to='static-storage/index/tutorials')
-    link = models.URLField(null=True)
+    link = models.TextField(null=True)
 
 
 class AboutUs(EditorBaseModel):
