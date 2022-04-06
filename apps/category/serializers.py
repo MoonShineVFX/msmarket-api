@@ -39,3 +39,9 @@ class TagUpdateSerializer(EditorBaseSerializer):
         model = Tag
         fields = ('id', 'name', 'createTime', 'updateTime', 'creator', 'updater')
 
+
+class TagXLTNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('name',)
+

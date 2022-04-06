@@ -38,6 +38,7 @@ class AdminTagUpdate(PostUpdateView):
     permission_classes = (IsAuthenticated, IsAdminUser)
     queryset = Tag.objects.select_related("creator", "updater").all()
     serializer_class = serializers.TagUpdateSerializer
+    translation_serializer_class = serializers.TagXLTNSerializer
 
 
 class AdminTagDelete(PostDestroyView):

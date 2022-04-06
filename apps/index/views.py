@@ -32,10 +32,11 @@ class SetLanguageView(APIView):
         return response
 
 
-class CommonView(APIView):
+class CommonView(APIView, SwitchLangMixin):
     authentication_classes = [CustomerJWTAuthentication]
 
     def post(self, request):
+        self.set_language()
         tags = Tag.objects.all()
         lang_config = LangConfig.objects.only('updated_at').latest('updated_at')
         data = {
