@@ -13,6 +13,7 @@ class Banner(EditorBaseModel):
     mobile_image = models.ImageField(null=True, upload_to='static-storage/index/banners')
     description = models.TextField(null=True, default="")
     link = models.URLField(null=True)
+    product = models.ForeignKey(Product, null=True, on_delete=models.PROTECT)
 
     is_active = models.BooleanField(default=False)
     active_at = models.DateTimeField(null=True)

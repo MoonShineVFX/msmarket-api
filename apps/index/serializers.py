@@ -9,10 +9,11 @@ from .models import Tutorial, AboutUs, Banner, Privacy
 class IndexBannerSerializer(ProductListSerializer):
     imgUrl = serializers.SerializerMethodField()
     mobileImgUrl = serializers.SerializerMethodField()
+    productId = serializers.IntegerField(source="product_id")
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link')
+        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link', 'productId')
 
     def get_imgUrl(self, instance):
         return "{}/{}".format(settings.IMAGE_ROOT, instance.image) if instance.image else None
@@ -86,7 +87,7 @@ class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveM
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link',
+        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link', 'productId'
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
@@ -97,7 +98,7 @@ class AdminBannerCreateSerializer(AdminBannerSerializer):
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'image', "mobileImage", 'link', 'imgUrl', 'mobileImgUrl',
+        fields = ('id', 'title', 'description', 'image', "mobileImage", 'link', 'productId', 'imgUrl', 'mobileImgUrl',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
