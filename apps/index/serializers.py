@@ -87,7 +87,7 @@ class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveM
 
     class Meta:
         model = Banner
-        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link', 'productId'
+        fields = ('id', 'title', 'description', 'imgUrl', 'mobileImgUrl', 'link', 'productId',
                   "createTime", "updateTime", "creator", "updater",
                   'isActive', 'activeTime', 'inactiveTime')
 
