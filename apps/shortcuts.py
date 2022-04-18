@@ -148,6 +148,7 @@ class PostUpdateView(GenericAPIView, mixins.UpdateModelMixin):
         if lang_code:
             activate(lang_code)
             type(instance).objects.filter(id=instance.id).update(**serializer.validated_data)
+            deactivate()
         else:
             deactivate()
             self.perform_update(serializer)
@@ -221,6 +222,7 @@ class WebUpdateView(GenericAPIView):
         if lang_code:
             activate(lang_code)
             type(instance).objects.filter(id=instance.id).update(**serializer.validated_data)
+            deactivate()
         else:
             deactivate()
             self.perform_update(serializer)
@@ -269,5 +271,6 @@ class BaseXLTNView(GenericAPIView):
             activate(lang_code)
             lang_data = self.serializer_class(instance).data,
             data.update({lang_code: lang_data[0]})
+        deactivate()
 
         return Response(data, status=status.HTTP_200_OK)

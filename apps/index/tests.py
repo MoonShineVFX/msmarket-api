@@ -312,6 +312,9 @@ class IndexTest(TestCase):
         assert response.status_code == 200
         about = AboutUs.objects.raw_values().first()
         print(about)
+        assert about["title"] == '關於我們'
+        assert about["title_zh"] == '關於我們'
+        assert about["title_en"] == 'new'
 
     @override_settings(DEBUG=True)
     @debugger_queries
