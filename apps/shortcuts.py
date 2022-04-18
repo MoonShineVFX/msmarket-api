@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection, reset_queries
-from django.utils.translation import activate
+from django.utils.translation import activate, deactivate
 
 from rest_framework.generics import GenericAPIView, CreateAPIView, DestroyAPIView
 from rest_framework import mixins
@@ -149,6 +149,7 @@ class PostUpdateView(GenericAPIView, mixins.UpdateModelMixin):
             activate(lang_code)
             type(instance).objects.filter(id=instance.id).update(**serializer.validated_data)
         else:
+            deactivate()
             self.perform_update(serializer)
 
         if getattr(instance, '_prefetched_objects_cache', None):
@@ -221,6 +222,7 @@ class WebUpdateView(GenericAPIView):
             activate(lang_code)
             type(instance).objects.filter(id=instance.id).update(**serializer.validated_data)
         else:
+            deactivate()
             self.perform_update(serializer)
         return Response({}, status=status.HTTP_200_OK)
 
