@@ -10,7 +10,7 @@ from allauth.account.models import EmailAddress
 
 class RegisterCustomerSerializer(serializers.Serializer):
     realName = serializers.CharField(required=False)
-    nickname = serializers.CharField()
+    nickname = serializers.CharField(required=False)
     email = serializers.EmailField()
     password = serializers.CharField()
 
@@ -21,7 +21,7 @@ class RegisterCustomerSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         name = validated_data.pop('realName', None)
-        nick_name = validated_data.pop('nickname')
+        nick_name = validated_data.pop('nickname', None)
         email = validated_data.pop('email')
         password = validated_data.pop('password')
 
