@@ -26,6 +26,10 @@ class Tutorial(EditorBaseModel):
     image = models.ImageField(null=True, upload_to='static-storage/index/tutorials')
     link = models.TextField(null=True)
 
+    is_active = models.BooleanField(default=False)
+    active_at = models.DateTimeField(null=True)
+    inactive_at = models.DateTimeField(null=True)
+
 
 class AboutUs(EditorBaseModel):
     title = models.CharField(max_length=200)

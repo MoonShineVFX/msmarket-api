@@ -71,7 +71,7 @@ class IndexView(APIView, SwitchLangMixin):
         self.set_language()
         banners = Banner.objects.filter(is_active=True).all()
         new_products = Product.objects.filter(is_active=True).order_by("-active_at")[:4]
-        tutorials = Tutorial.objects.order_by("-created_at")[:3]
+        tutorials = Tutorial.objects.filter(is_active=True).order_by("-created_at")[:3]
 
         data = {
             "banners": serializers.IndexBannerSerializer(banners, many=True).data,
@@ -205,6 +205,25 @@ class AdminTutorialUpdateView(PostUpdateView):
     translation_serializer_class = serializers.TutorialXLTNSerializer
 
 
+class AdminTutorialActiveView(PostUpdateView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminTutorialActiveSerializer
+    queryset = Tutorial.objects.select_related("creator", "updater")
+
+    def perform_update(self, serializer):
+        is_active = serializer.validated_data.get("is_active")
+        data = {"updater_id": self.request.user.id, "updated_at": timezone.now(), "is_active": is_active}
+
+        if is_active:
+            data.update({"active_at": timezone.now()})
+        else:
+            data.update({"inactive_at": timezone.now()})
+        Tutorial.objects.filter(id=serializer.instance.id).update(**data)
+        for key, value in data.items():
+            setattr(serializer.instance, key, value)
+        
+        
 class AdminBannerListView(PostListView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)

@@ -196,7 +196,23 @@ class IndexTest(TestCase):
         assert response.status_code == 200
         assert Tutorial.objects.filter(
             id=1, title="新標題", link="https://www.facebook.com", updater_id=self.admin.id).exists()
-
+        
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_tutorial_active(self):
+        url = '/api/admin_tutorial_active'
+        data = {
+            "id": 1,
+            "isActive": True
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="multipart")
+        print(response.data)
+        assert response.status_code == 200
+        tutorial = Tutorial.objects.filter(id=1, updater_id=self.admin.id, is_active=True).first()
+        assert tutorial is not None
+        assert tutorial.active_at is not None
+        
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_admin_banners(self):

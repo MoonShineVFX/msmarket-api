@@ -74,13 +74,26 @@ class TutorialLinkSerializer(TutorialSerializer):
         fields = ('id', 'title', 'link', 'imgUrl')
 
 
-class AdminTutorialCreateSerializer(TutorialSerializer, EditorBaseSerializer):
+class AdminTutorialCreateSerializer(TutorialSerializer, EditorBaseSerializer, ActiveMixin):
     file = serializers.ImageField(write_only=True, source="image")
 
     class Meta:
         model = Tutorial
         fields = ('id', 'title', 'file', 'link', 'imgUrl',
-                  "createTime", "updateTime", "creator", "updater")
+                  "createTime", "updateTime", "creator", "updater",
+                  'isActive', 'activeTime', 'inactiveTime')
+
+
+class AdminTutorialActiveSerializer(AdminTutorialCreateSerializer):
+
+    class Meta:
+        model = Tutorial
+        fields = ('id', 'title', 'link', 'imgUrl',
+                  "createTime", "updateTime", "creator", "updater",
+                  'isActive', 'activeTime', 'inactiveTime')
+        read_only_fields = ('id', 'title', 'link', 'imgUrl',
+                            "createTime", "updateTime", "creator", "updater",
+                            'activeTime', 'inactiveTime')
 
 
 class AdminBannerSerializer(IndexBannerSerializer, EditorBaseSerializer, ActiveMixin):
