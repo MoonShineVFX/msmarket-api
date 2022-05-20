@@ -337,15 +337,23 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_update_product_xltn(self):
-        url = '/api/admin_product_update'
+    def _test_admin_model_upload_uri(self):
+        Format.objects.create(id=3, name="format02")
+        Renderer.objects.create(id=4, name="renderer02")
+        Product.objects.create(id=8, title="商品08", title_zh="商品08", title_en="product08",
+                                    description="", price=Decimal(1), model_size=0,
+                               model_count=0, texture_size="1920x1080", is_active=True, creator_id=1)
+        url = '/api/admin_model_upload_uri'
         data = {
-            "id": 2,
-            "langCode": "en",
-            "title": "new_title",
-            "description": "new_description",
+            "productId": 8,
+            "formatId": 3,
+            "rendererId": 4,
+            "size": 3710699725,
+            "filename": "7z_UnderSea_PackA_FBX.7z",
         }
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="json")
-        assert response.status_code == 200
         print(response.data)
+        assert response.status_code == 200
+
+

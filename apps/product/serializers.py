@@ -179,6 +179,23 @@ class ModelSerializer(serializers.ModelSerializer):
         return instance.renderer.name
 
 
+class CreateModelSerializer(serializers.ModelSerializer):
+    productId = serializers.IntegerField(source="product_id")
+    formatId = serializers.IntegerField(source="format_id")
+    rendererId = serializers.IntegerField(source="renderer_id")
+    filename = serializers.CharField()
+
+    class Meta:
+        model = Model
+        fields = ('id', 'productId', 'formatId', 'rendererId', 'size', 'filename')
+
+    def create(self, validated_data):
+        filename = validated_data.pop('filename')
+        file_path = '/'.join(["products", str(validated_data["product_id"]), "models", filename])
+        validated_data["file"] = file_path
+        return super().create(validated_data)
+
+
 class ProductDetailSerializer(DetailImgUrlMixin):
     price = serializers.IntegerField()
     modelSum = serializers.IntegerField(source="model_count")

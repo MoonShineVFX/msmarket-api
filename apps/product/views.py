@@ -1,3 +1,4 @@
+import requests
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
@@ -9,7 +10,7 @@ from ..shortcuts import (
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from ..storage import get_download_link
+from ..storage import generate_signed_url_v2, generate_signed_url_v2_for_upload
 
 from .models import Product, Model, Image
 from ..user.models import CustomerProduct
@@ -146,7 +147,33 @@ class ModelDownloadLink(GenericAPIView):
         renderer_id = self.request.data.get('rendererId', None)
         if self.user_has_product(user_id=self.request.user.id, product_id=product_id):
             model = get_object_or_404(Model, product_id=product_id, format_id=format_id, renderer_id=renderer_id)
-            url = get_download_link(file_path=model.file)
+            url = generate_signed_url_v2(file_path=model.file)
             return Response(data={"url": url}, status=status.HTTP_200_OK)
         return Response(data="User hasn't buy the product", status=status.HTTP_403_FORBIDDEN)
 
+
+class AdminModelUploadUrI(GenericAPIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request, *args, **kwargs):
+        session_uri = None
+        serializer = serializers.CreateModelSerializer(data=request.data)
+        if serializer.is_valid():
+            model = serializer.save(**{"creator_id": self.request.user.id})
+            url = generate_signed_url_v2_for_upload(file_path=model.file)
+
+            if url:
+                payload = {}
+                headers = {
+                    'x-goog-resumable': 'start',
+                    'Content-Type': 'application/json'
+                }
+
+                response = requests.request("POST", url, headers=headers, data=payload)
+                session_uri = response.headers.get('Location', None)
+            else:
+                print("url is empty")
+
+            return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
+        return Response(data="User hasn't buy the product", status=status.HTTP_403_FORBIDDEN)

@@ -239,6 +239,7 @@ GS_BUCKET_NAME = 'ms-image-storage'
 GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
 GS_FILE_OVERWRITE = False
 MEDIA_SERVICE_ACCOUNT_SECRET = os.environ.get('MEDIA_SERVICE_ACCOUNT_SECRET', None)
+UPLOAD_SERVICE_ACCOUNT_SECRET = os.environ.get('UPLOAD_SERVICE_ACCOUNT_SECRET', None)
 
 if 'test' in sys.argv:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'

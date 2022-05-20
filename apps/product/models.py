@@ -1,7 +1,6 @@
 from django.db import models
 from apps.user.models import EditorBaseModel
 from apps.category.models import Tag
-from ..storage import PublicGoogleCloudStorage
 
 from google.cloud import storage
 from django.dispatch import receiver
@@ -11,7 +10,7 @@ from django.conf import settings
 def get_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/products/<product_id>/
     if type(instance) == Model:
-        return '/'.join(["static-storage/products", str(instance.product_id), "models", filename])
+        return '/'.join(["products", str(instance.product_id), "models", filename])
     if type(instance) == Image:
         return '/'.join(["static-storage/products", str(instance.product_id), "images", filename])
 
