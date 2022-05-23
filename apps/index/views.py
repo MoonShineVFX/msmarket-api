@@ -104,7 +104,7 @@ class PrivacyView(RetrieveSwitchLangMixin, RetrieveAPIView):
 
 class TutorialListView(GenericAPIView, SwitchLangMixin):
     serializer_class = serializers.TutorialLinkSerializer
-    queryset = Tutorial.objects.order_by('-created_at').all()
+    queryset = Tutorial.objects.filter(is_active=True).order_by('-created_at')
 
     def post(self, request, *args, **kwargs):
         self.set_language()
@@ -220,8 +220,6 @@ class AdminTutorialActiveView(PostUpdateView):
         else:
             data.update({"inactive_at": timezone.now()})
         Tutorial.objects.filter(id=serializer.instance.id).update(**data)
-        for key, value in data.items():
-            setattr(serializer.instance, key, value)
         
         
 class AdminBannerListView(PostListView):
