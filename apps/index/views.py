@@ -220,6 +220,8 @@ class AdminTutorialActiveView(PostUpdateView):
         else:
             data.update({"inactive_at": timezone.now()})
         Tutorial.objects.filter(id=serializer.instance.id).update(**data)
+        for key, value in data.items():
+            setattr(serializer.instance, key, value)
         
         
 class AdminBannerListView(PostListView):

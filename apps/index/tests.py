@@ -206,12 +206,25 @@ class IndexTest(TestCase):
             "isActive": True
         }
         self.client.force_authenticate(user=self.admin)
-        response = self.client.post(url, data=data, format="multipart")
+        response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
         tutorial = Tutorial.objects.filter(id=1, updater_id=self.admin.id, is_active=True).first()
         assert tutorial is not None
         assert tutorial.active_at is not None
+
+        url = '/api/admin_tutorial_active'
+        data = {
+            "id": 1,
+            "isActive": False
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        tutorial = Tutorial.objects.filter(id=1, updater_id=self.admin.id, is_active=False).first()
+        assert tutorial is not None
+        assert tutorial.inactive_at is not None
         
     @override_settings(DEBUG=True)
     @debugger_queries
