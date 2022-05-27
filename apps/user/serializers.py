@@ -9,8 +9,6 @@ from allauth.account.models import EmailAddress
 
 
 class RegisterCustomerSerializer(serializers.Serializer):
-    realName = serializers.CharField(required=False)
-    nickname = serializers.CharField(required=False)
     email = serializers.EmailField()
     password = serializers.CharField()
 
@@ -20,12 +18,10 @@ class RegisterCustomerSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        name = validated_data.pop('realName', None)
-        nick_name = validated_data.pop('nickname', None)
-        email = validated_data.pop('email')
+        email = validated_data.get('email')
         password = validated_data.pop('password')
 
-        user = User.objects.create(name=name, nick_name=nick_name, email=email)
+        user = User.objects.create(**validated_data)
         email = EmailAddress.objects.create(user=user, email=email, primary=True)
         user.set_password(raw_password=password)
         user.save(update_fields=['password'])
@@ -43,11 +39,11 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    nickname = serializers.CharField(source="nick_name")
+    realName = serializers.CharField(source="real_name", required=False)
 
     class Meta:
         model = User
-        fields = ('nickname', 'email')
+        fields = ('email', 'realName', 'address')
         read_only_fields = ['email']
 
 

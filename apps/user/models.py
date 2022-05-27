@@ -6,7 +6,8 @@ from django.contrib.auth.models import UserManager
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=50, null=True)
-    nick_name = models.CharField(max_length=50, null=True)
+    real_name = models.CharField(max_length=50, default="", null=True, blank=True)
+    address = models.CharField(max_length=100, default="", null=True, blank=True)
 
     is_staff = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False, blank=True)

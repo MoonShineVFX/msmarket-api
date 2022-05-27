@@ -35,15 +35,13 @@ class UserTest(TestCase):
     def test_register(self):
         url = '/api/register'
         data = {
-            "realName": "realName",
-            "nickname": "nickName",
             "email": "test@mail.com",
             "password": "password"
         }
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
+        assert User.objects.filter(email="test@mail.com").exists()
         assert EmailAddress.objects.filter(email="test@mail.com", primary=True, verified=False).exists()
         assert mail.outbox[0]
         print(mail.outbox[0].subject)
@@ -54,8 +52,6 @@ class UserTest(TestCase):
     def test_register_with_exist_email(self):
         url = '/api/register'
         data = {
-            "realName": "realName",
-            "nickname": "nickName",
             "email": "admin@mail.com",
             "password": "password"
         }
@@ -68,8 +64,6 @@ class UserTest(TestCase):
     def test_active_account(self):
         url = '/api/register'
         data = {
-            "realName": "realName",
-            "nickname": "nickName",
             "email": "test@mail.com",
             "password": "password"
         }
@@ -78,7 +72,7 @@ class UserTest(TestCase):
         assert mail.outbox[0]
         print(mail.outbox[0].subject)
 
-        user = User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").first()
+        user = User.objects.filter(email="test@mail.com").first()
         assert user
         assert not user.is_active
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -88,7 +82,7 @@ class UserTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
-        assert User.objects.filter(name="realName", nick_name="nickName", email="test@mail.com").exists()
+        assert User.objects.filter(email="test@mail.com").exists()
         assert EmailAddress.objects.filter(email="test@mail.com", primary=True, verified=True).exists()
         assert user.is_active
 
@@ -141,6 +135,8 @@ class UserTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_JWT_scope(self):
+        EmailAddress.objects.create(user=self.user, verified=True)
+
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(self.user)
         refresh['scope'] = "customer"
@@ -151,6 +147,7 @@ class UserTest(TestCase):
             'HTTP_AUTHORIZATION': 'Bearer ' + token,
         }
         response = self.client.post(url, **auth_headers)
+        print(response.data)
         assert response.status_code == 200
 
         refresh = RefreshToken.for_user(self.user)
@@ -314,12 +311,12 @@ class UserTest(TestCase):
         url = '/api/account_update'
         self.client.force_authenticate(user=self.user)
         data = {
-            "nickname": "new",
+            "realName": "new",
         }
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        assert User.objects.filter(id=self.user.id, nick_name="new").exists()
+        assert User.objects.filter(id=self.user.id, real_name="new").exists()
 
     @override_settings(DEBUG=True)
     @debugger_queries
