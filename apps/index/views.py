@@ -261,3 +261,5 @@ class AdminBannerActiveView(PostUpdateView):
             data.update({"inactive_at": timezone.now()})
 
         Banner.objects.filter(id=serializer.instance.id).update(**data)
+        for key, value in data.items():
+            setattr(serializer.instance, key, value)
