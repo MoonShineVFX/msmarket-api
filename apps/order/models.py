@@ -25,14 +25,23 @@ class Order(models.Model):
     status = models.IntegerField(default=0)
     amount = models.DecimalField(max_digits=10, decimal_places=4)
     item_count = models.IntegerField(default=0)
+
     invoice_number = models.CharField(max_length=10, null=True)
+    invoice_type = models.IntegerField(default=0)
     invoice_counter = models.IntegerField(default=1)
+    e_invoice = models.OneToOneField("EInvoice", null=True, on_delete=models.PROTECT, related_name="order")
+    paper_invoice = models.OneToOneField("PaperInvoice", null=True, on_delete=models.PROTECT, related_name="order")
 
     paid_at = models.DateTimeField(null=True)
     paid_by = models.CharField(max_length=10, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = models.Manager()
+
+    INVOICE_TYPE = {
+        0: "electronic",
+        1: "paper",
+    }
 
     STATUS = {
         0: "unpaid",
@@ -72,9 +81,8 @@ class NewebpayPayment(models.Model):
     objects = models.Manager()
 
 
-class Invoice(models.Model):
-    order = models.OneToOneField(Order, on_delete=models.PROTECT, related_name="invoice")
-    payment = models.OneToOneField(NewebpayPayment, on_delete=models.PROTECT, related_name="invoice")
+class EInvoice(models.Model):
+    payment = models.OneToOneField(NewebpayPayment, on_delete=models.PROTECT, related_name="e_invoice")
 
     invoice_trans_no = models.CharField(max_length=20)
     invoice_merchant_order_no = models.CharField(max_length=30)
@@ -87,6 +95,18 @@ class Invoice(models.Model):
     qrcode_r = models.CharField(max_length=200)
 
     created_at = models.DateTimeField()
+
+
+class PaperInvoice(models.Model):
+    invoice_number = models.CharField(max_length=10, null=True)
+    real_name = models.CharField(max_length=100)
+    address = models.CharField(max_length=100)
+    receiver_name = models.CharField(max_length=100)
+    receiver_address = models.CharField(max_length=100)
+    company_name = models.CharField(max_length=100)
+    tax_number = models.CharField(max_length=8)
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class InvoiceError(models.Model):

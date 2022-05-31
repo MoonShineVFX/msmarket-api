@@ -11,7 +11,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.test.utils import override_settings
 from ..shortcuts import debugger_queries
-from .models import Order, Cart, NewebpayResponse, NewebpayPayment, Invoice, InvoiceError
+from .models import Order, Cart, NewebpayResponse, NewebpayPayment, EInvoice, InvoiceError, PaperInvoice
 from ..product.models import Product
 from ..user.models import User, CustomerProduct
 
@@ -146,9 +146,9 @@ class OrderTest(TestCase):
     @mock.patch('apps.order.views.hash_iv', test_hash_iv)
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_newebpay_payment_notify_success(self):
+    def test_newebpay_payment_notify_success_with_e_invoice(self):
         order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000,
-                                     invoice_counter=5)
+                                     invoice_counter=5, invoice_type=1)
         order.products.set([1])
 
         url = '/api/newebpay_payment_notify'
@@ -166,10 +166,12 @@ class OrderTest(TestCase):
             order_id=order.id, MerchantID="MerchantID", is_decrypted=True)
         newebpay_payment = NewebpayPayment.objects.get(
             order_id=order.id, payment_type="CREDIT", amount=100, encrypted_data_id=newebpay_response.id)
-        assert Order.objects.filter(
-            id=order.id, status=Order.SUCCESS, paid_by="CREDIT", success_payment_id=newebpay_payment.id).exists()
         assert CustomerProduct.objects.filter(order_id=order.id, user_id=order.user_id, product_id=1).exists()
-        assert Invoice.objects.filter(id=order.id).exists() # test will not pass
+
+        check_order = Order.objects.filter(
+            id=order.id, status=Order.SUCCESS, paid_by="CREDIT", success_payment_id=newebpay_payment.id).first()
+        assert check_order is not None
+        assert check_order.e_invoice_id is not None # test will not pass
 
     @mock.patch('apps.order.views.newepay_cipher', AESCipher(key=test_hash_key, iv=test_hash_iv))
     @mock.patch('apps.order.views.hash_key', test_hash_key)
@@ -206,13 +208,24 @@ class OrderTest(TestCase):
 
         url = '/api/order_create'
         data = {
-            "cartIds": [1, 2]
+            "cartIds": [1, 2],
+            "realName": "realName",
+            "address": "address",
+            "invoiceType": "paper",
+            "receiverName": "receiverName",
+            "receiverAddress": "receiverAddress",
+            "companyName": "companyName",
+            "taxNumber": "12345678",
         }
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        order = Order.objects.filter(user=self.user).last()
+        paper_invoice = PaperInvoice.objects.filter(real_name="realName").last()
+        assert paper_invoice is not None
+
+        order = Order.objects.filter(user=self.user, invoice_type=1, paper_invoice_id=paper_invoice.id).last()
+        assert order is not None
         assert order.amount == Decimal("2.000")
         assert int(order.merchant_order_no[3:]) == int(merchant_order_no[3:]) + 1
 
@@ -233,7 +246,14 @@ class OrderTest(TestCase):
         CustomerProduct.objects.create(user=self.user, order=order, product_id=1)
         url = '/api/order_create'
         data = {
-            "cartIds": [1, 2]
+            "cartIds": [1, 2],
+            "realName": "realName",
+            "address": "address",
+            "invoiceType": "paper",
+            "receiverName": "receiverName",
+            "receiverAddress": "receiverAddress",
+            "companyName": "companyName",
+            "taxNumber": "12345678",
         }
         self.client.force_authenticate(user=self.user)
         print("test start")
@@ -250,7 +270,14 @@ class OrderTest(TestCase):
 
         url = '/api/order_create'
         data = {
-            "cartIds": [1, 2]
+            "cartIds": [1, 2],
+            "realName": "realName",
+            "address": "address",
+            "invoiceType": "paper",
+            "receiverName": "receiverName",
+            "receiverAddress": "receiverAddress",
+            "companyName": "companyName",
+            "taxNumber": "12345678",
         }
         self.client.force_authenticate(user=self.user)
         print("test start")
@@ -460,8 +487,10 @@ class OrderTest(TestCase):
         Cart.objects.create(session_key=session.session_key, product_id=1)
 
         url = '/api/login'
+        body = {'recaptcha': '123'}
         self.client.force_authenticate(user=self.user)
-        response = self.client.post(url)
+        response = self.client.post(url, data=body)
+        assert response.status_code == 200
         assert Cart.objects.filter(product_id=1, session_key=session.session_key, user=self.user).exists()
 
         url = '/api/cart_product_add'
@@ -614,22 +643,9 @@ class OrderTest(TestCase):
                "vu3oUfw2bfgg%3D%3D%3A%2A%2A%2A%2A%2A%2A%2A%2A%2A%2A%3A2%3A2%3A0%3A&QRcodeR=%2A%2A%E5%95%86%E5%93%81%" \
                "E4%B8%80%3A2%3A99%3A%E5%95%86%E5%93%81%E4%BA%8C%3A3%3A50&EndStr=%23%23"
         EZPayInvoiceMixin().handle_str_response(data=data, order=order)
-        assert Invoice.objects.filter(
-            invoice_number="DS12223164", order_id=order.id, invoice_merchant_order_no="MSM20211227000013001").exists()
+        assert EInvoice.objects.filter(
+            invoice_number="DS12223164", invoice_merchant_order_no="MSM20211227000013001").exists()
         assert order.invoice_number == "DS12223164"
-
-    @debugger_queries
-    def test_test_cookie(self):
-        url = '/api/cart_product_add'
-        data = {
-            "productId": 1
-        }
-        response = self.client.post(url, data=data, format="json")
-
-        url = '/api/test_cookie'
-        response = self.client.get(url)
-        print(response.data)
-        assert response.data["sessionid"] is not None
 
     def test_encode_base64(self):
         message = {   "type": "service_account",   "project_id": "ms-model-lib-project-id"}

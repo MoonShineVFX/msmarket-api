@@ -17,7 +17,7 @@ from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 
-from .models import Cart, Order, NewebpayPayment, NewebpayResponse, Invoice, InvoiceError
+from .models import Cart, Order, NewebpayPayment, NewebpayResponse, EInvoice, InvoiceError, PaperInvoice
 from ..product.models import Product
 from ..user.models import CustomerProduct
 from . import serializers
@@ -126,7 +126,7 @@ class EZPayInvoiceMixin(object):
         }
         return urlencode(post_data)
 
-    def call_invoice_api_and_save(self, order):
+    def call_e_invoice_api_and_save(self, order):
         """
         save invoice or invoice_error, set order params without save
         """
@@ -157,18 +157,21 @@ class EZPayInvoiceMixin(object):
             if validated_data["status"] == "SUCCESS":
                 invoice_serializer = serializers.EZPayInvoiceSerializer(data=data)
                 invoice_serializer.is_valid()
-                invoice_data = invoice_serializer.validated_data
+                e_invoice_data = invoice_serializer.validated_data
 
-                ezpay_id = invoice_data.pop('merchant_id')
-                invoice_merchant_order_no = invoice_data.get('invoice_merchant_order_no')
+                invoice_number = e_invoice_data.get("invoice_number")
+                ezpay_id = e_invoice_data.pop('merchant_id')
+
+                invoice_merchant_order_no = e_invoice_data.get('invoice_merchant_order_no')
                 merchant_order_no = invoice_merchant_order_no[:-3]
 
                 # 商店代號正確，才會建立新發票
                 if ezpay_id == settings.EZPAY_ID and order.merchant_order_no == merchant_order_no:
-                    invoice_data["order_id"] = order.id if order else None
-                    invoice_data["payment_id"] = order.success_payment_id if order else None
-                    invoice = Invoice.objects.create(**invoice_data)
-                    order.invoice_number = invoice_data["invoice_number"]
+                    e_invoice_data["payment_id"] = order.success_payment_id if order else None
+                    e_invoice = EInvoice.objects.create(**e_invoice_data)
+
+                    order.invoice_number = invoice_number
+                    order.e_invoice = e_invoice
             else:
                 invoice_error = InvoiceError.objects.create(**validated_data)
                 order.invoice_counter = order.invoice_counter + 1
@@ -229,6 +232,9 @@ class OrderCreate(APIView, NewebpayMixin):
         product_ids = [cart.product_id for cart in carts]
         sum_price = sum([cart.product.price for cart in carts])
 
+        serializer = serializers.OrderCreateSerializer(data=self.request.data)
+        serializer.is_valid()
+        invoice_type = serializer.validated_data["invoice_type"]
         bought_product_ids = CustomerProduct.objects.values_list("id", flat=True).filter(user_id=request.user.id, product_id__in=product_ids).all()
 
         if bought_product_ids:
@@ -246,8 +252,21 @@ class OrderCreate(APIView, NewebpayMixin):
             today_str = timezone.now().strftime("%Y%m%d")
             merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
 
-        order = Order.objects.create(
-            user=request.user, merchant_order_no=merchant_order_no, amount=sum_price, item_count=len(products))
+        order_data = {
+            "user": request.user,
+            "merchant_order_no": merchant_order_no,
+            "amount": sum_price,
+            "item_count": len(products)
+
+        }
+        # 建立紙本發票
+        if invoice_type == "paper":
+            paper_invoice = serializer.save()
+            order_data["paper_invoice_id"] = paper_invoice.id
+            order_data["invoice_type"] = paper_invoice.id
+
+        # 建立訂單
+        order = Order.objects.create(**order_data)
         order.products.set(products)
 
         # 清除購物車已下單商品
@@ -408,9 +427,10 @@ class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
                     order.paid_at = payment.pay_time
                     order.paid_by = payment.payment_type
                     order.success_payment_id = payment.id
-                    if not order.invoice_number:
-                        # 新增發票 不會存order
-                        self.call_invoice_api_and_save(order=order)
+
+                    # 新增電子發票 不會存order
+                    if order.invoice_type == 0 and not order.invoice_number:
+                        self.call_e_invoice_api_and_save(order=order)
 
             else:
                 order.status = Order.FAIL
@@ -507,7 +527,7 @@ class CreateEZPayInvoiceFromOrder(APIView, EZPayInvoiceMixin):
         order_id = self.request.data.get('orderId', None)
 
         order = get_object_or_404(Order, id=order_id)
-        result = self.call_invoice_api_and_save(order=order)
+        result = self.call_e_invoice_api_and_save(order=order)
         order.save()
         return Response(result, status=status.HTTP_200_OK)
 

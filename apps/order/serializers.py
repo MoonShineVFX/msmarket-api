@@ -2,7 +2,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from rest_framework import serializers
-from .models import Order, Cart, NewebpayResponse, NewebpayPayment, Invoice, InvoiceError
+from .models import Order, Cart, NewebpayResponse, NewebpayPayment, EInvoice, InvoiceError, PaperInvoice
 from ..product.serializers import OrderProductSerializer
 
 
@@ -40,7 +40,7 @@ class NewebpayResponseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class EZPayInvoiceSerializer(serializers.ModelSerializer):
+class EZPayInvoiceSerializer(serializers.Serializer):
     MerchantID = serializers.CharField(max_length=15, source="merchant_id")
     MerchantOrderNo = serializers.CharField(max_length=20, source="invoice_merchant_order_no")
     InvoiceTransNo = serializers.CharField(max_length=20, source="invoice_trans_no")
@@ -52,11 +52,6 @@ class EZPayInvoiceSerializer(serializers.ModelSerializer):
     BarCode = serializers.CharField(max_length=50, source="barcode")
     QRcodeL = serializers.CharField(max_length=200, source="qrcode_l")
     QRcodeR = serializers.CharField(max_length=200, source="qrcode_r")
-
-    class Meta:
-        model = Invoice
-        fields = ("MerchantID", "MerchantOrderNo", "InvoiceTransNo", "TotalAmt", "InvoiceNumber", "RandomNum",
-                  "CheckCode", "CreateTime", "BarCode", "QRcodeL", "QRcodeR")
 
 
 class EZPayResponseSerializer(serializers.Serializer):
@@ -104,6 +99,23 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_paidBy(self, instance):
         return instance.paid_by if instance.paid_by else ""
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    realName = serializers.CharField(max_length=100, source="real_name")
+    address = serializers.CharField(max_length=100)
+    invoiceType = serializers.CharField(max_length=100, source="invoice_type")
+    receiverName = serializers.CharField(max_length=100, source="receiver_name")
+    receiverAddress = serializers.CharField(max_length=100, source="receiver_address")
+    companyName = serializers.CharField(max_length=100, source="company_name")
+    taxNumber = serializers.CharField(max_length=8, source="tax_number")
+
+    def create(self, validated_data):
+        type_str = validated_data.pop("invoice_type")
+        if type_str == "paper":
+            return PaperInvoice.objects.create(**validated_data)
+        else:
+            return None
 
 
 class OrderDetailSerializer(OrderSerializer):
