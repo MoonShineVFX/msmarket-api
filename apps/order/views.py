@@ -10,7 +10,7 @@ from django.db.models import F
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView, GenericAPIView
-from ..shortcuts import PostDestroyView, SwitchLangMixin
+from ..shortcuts import PostDestroyView, SwitchLangMixin, PostCreateView, PostUpdateView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
@@ -367,7 +367,7 @@ class AdminOrderDetail(OrderDetail):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
     serializer_class = serializers.AdminOrderDetailSerializer
-    queryset = Order.objects.select_related("user").prefetch_related("products")
+    queryset = Order.objects.select_related("user", "paper_invoice").prefetch_related("products")
 
 
 class NewebpayPaymentNotify(GenericAPIView, EZPayInvoiceMixin):
@@ -530,6 +530,19 @@ class CreateEZPayInvoiceFromOrder(APIView, EZPayInvoiceMixin):
         result = self.call_e_invoice_api_and_save(order=order)
         order.save()
         return Response(result, status=status.HTTP_200_OK)
+
+
+class AdminOrderPaperInvoiceUpdate(APIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def post(self, request, *args, **kwargs):
+        order_id = self.request.data.get('id', None)
+        invoice_number = self.request.data.get('invoice', None)
+        order = get_object_or_404(Order, id=order_id)
+        Order.objects.filter(id=order_id).update(invoice_number=invoice_number)
+        PaperInvoice.objects.filter(id=order.paper_invoice_id).update(invoice_number=invoice_number)
+        return Response(self.request.data, status=status.HTTP_200_OK)
 
 
 class TestCookie(APIView):

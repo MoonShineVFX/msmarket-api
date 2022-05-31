@@ -216,12 +216,13 @@ class OrderTest(TestCase):
             "receiverAddress": "receiverAddress",
             "companyName": "companyName",
             "taxNumber": "12345678",
+            "paperInvoiceType": "triplicate"
         }
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=data, format="json")
         print(response.data)
         assert response.status_code == 200
-        paper_invoice = PaperInvoice.objects.filter(real_name="realName").last()
+        paper_invoice = PaperInvoice.objects.filter(real_name="realName", type=3).first()
         assert paper_invoice is not None
 
         order = Order.objects.filter(user=self.user, invoice_type=1, paper_invoice_id=paper_invoice.id).last()
@@ -254,6 +255,7 @@ class OrderTest(TestCase):
             "receiverAddress": "receiverAddress",
             "companyName": "companyName",
             "taxNumber": "12345678",
+            "paperInvoiceType": "triplicate"
         }
         self.client.force_authenticate(user=self.user)
         print("test start")
@@ -278,6 +280,7 @@ class OrderTest(TestCase):
             "receiverAddress": "receiverAddress",
             "companyName": "companyName",
             "taxNumber": "12345678",
+            "paperInvoiceType": "triplicate"
         }
         self.client.force_authenticate(user=self.user)
         print("test start")
@@ -356,6 +359,26 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_admin_order_detail_with_paper_invoice(self):
+
+        paper_invoice = PaperInvoice.objects.create(
+            invoice_number="A123456789", real_name="real_name", address="address", receiver_name="receiver_name",
+            receiver_address="receiver_address", company_name="company_name", tax_number="12345678", type=3,
+        )
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"),
+                                     status=1, invoice_type=1, paper_invoice=paper_invoice)
+        order.products.set([1, 2])
+
+        url = '/api/admin_orders/{}'.format(merchant_order_no)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        assert response.status_code == 200
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_admin_order_search(self):
         today_str = timezone.now().strftime("%Y%m%d")
         merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
@@ -373,6 +396,32 @@ class OrderTest(TestCase):
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url, data=data, format="json")
         assert response.status_code == 200
+        print(response.data)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_order_paper_invoice_create(self):
+
+        paper_invoice = PaperInvoice.objects.create(
+            real_name="real_name", address="address", receiver_name="receiver_name",
+            receiver_address="receiver_address", company_name="company_name", tax_number="12345678", type=3,
+        )
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"),
+                                     status=1, invoice_type=1, paper_invoice=paper_invoice)
+        order.products.set([1, 2])
+
+        url = '/api/admin_order_paper_invoice_create'
+        data = {
+            "id": order.id,
+            "invoice": "A123456789",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+        assert response.status_code == 200
+        assert Order.objects.filter(id=order.id, invoice_number="A123456789").exists()
+        assert PaperInvoice.objects.filter(id=paper_invoice.id, invoice_number="A123456789").exists()
         print(response.data)
 
     @override_settings(DEBUG=True)

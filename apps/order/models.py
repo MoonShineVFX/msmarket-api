@@ -1,5 +1,5 @@
 from django.db import models
-from apps.user.models import CreatorBaseModel
+from apps.user.models import EditorBaseModel
 from ..product.models import Product
 from ..user.models import User
 
@@ -105,8 +105,18 @@ class PaperInvoice(models.Model):
     receiver_address = models.CharField(max_length=100)
     company_name = models.CharField(max_length=100)
     tax_number = models.CharField(max_length=8)
+    type = models.IntegerField(default=2)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    TYPE_NAME = {
+        2: "duplicate",
+        3: "triplicate",
+    }
+    TYPE_ID = {
+        "duplicate": 2,
+        "triplicate": 3,
+    }
 
 
 class InvoiceError(models.Model):

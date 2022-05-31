@@ -109,9 +109,13 @@ class OrderCreateSerializer(serializers.Serializer):
     receiverAddress = serializers.CharField(max_length=100, source="receiver_address")
     companyName = serializers.CharField(max_length=100, source="company_name")
     taxNumber = serializers.CharField(max_length=8, source="tax_number")
+    paperInvoiceType = serializers.CharField(max_length=20, source="paper_invoice_type")
 
     def create(self, validated_data):
         type_str = validated_data.pop("invoice_type")
+        paper_invoice_type = validated_data.pop("paper_invoice_type")
+        validated_data["type"] = PaperInvoice.TYPE_ID[paper_invoice_type]
+
         if type_str == "paper":
             return PaperInvoice.objects.create(**validated_data)
         else:
@@ -146,17 +150,36 @@ class AdminOrderListSerializer(OrderSerializer):
 class AdminOrderDetailSerializer(OrderDetailSerializer):
     tradeNumber = serializers.SerializerMethodField()
     account = serializers.SerializerMethodField()
+    invoiceType = serializers.SerializerMethodField()
+    realName = serializers.CharField(source="paper_invoice.real_name", allow_null=True)
+    address = serializers.CharField(source="paper_invoice.address", allow_null=True)
+    receiverName = serializers.CharField(source="paper_invoice.receiver_name", allow_null=True)
+    receiverAddress = serializers.CharField(source="paper_invoice.receiver_address", allow_null=True)
+    companyName = serializers.CharField(source="paper_invoice.company_name", allow_null=True)
+    taxNumber = serializers.CharField(source="paper_invoice.tax_number", allow_null=True)
+    paperInvoiceType = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ('id', 'orderNumber', 'tradeNumber', 'price', 'account', 'status', 'invoice',
-                  'createdAt', 'paidAt', 'paidBy', 'products')
+        fields = ('id', 'orderNumber', 'tradeNumber', 'price', 'account', 'status',
+                  'createdAt', 'paidAt', 'paidBy',
+                  'realName', 'address', 'invoice', 'invoiceType', 'receiverName', 'receiverAddress',
+                  'paperInvoiceType', 'companyName', 'taxNumber',
+                  'products')
 
     def get_tradeNumber(self, instance):
         return instance.success_payment.trade_no if instance.success_payment else ""
 
     def get_account(self, instance):
         return instance.user.email
+
+    def get_invoiceType(self, instance):
+        return Order.INVOICE_TYPE[instance.invoice_type]
+
+    def get_paperInvoiceType(self, instance):
+        if instance.paper_invoice:
+            return PaperInvoice.TYPE_NAME[instance.paper_invoice.type]
+        return None
 
 
 class AdminOrderSearchParamsSerializer(serializers.Serializer):
@@ -165,3 +188,19 @@ class AdminOrderSearchParamsSerializer(serializers.Serializer):
     invoice = serializers.CharField(source="invoice_number", required=False, allow_blank=True)
     startDate = serializers.DateField(source="start_date", required=False)
     endDate = serializers.DateField(source="end_date", required=False)
+
+
+class AdminOrderPaperInvoiceSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+    invoice = serializers.CharField(source="invoice_number")
+
+    class Meta:
+        model = Order
+        fields = ('id', 'invoice')
+
+    def create(self, validated_data):
+        type_str = validated_data.pop("invoice_type")
+        if type_str == "paper":
+            return PaperInvoice.objects.create(**validated_data)
+        else:
+            return None

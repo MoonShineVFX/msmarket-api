@@ -19,4 +19,8 @@ urlpatterns = [
     url(r'^cart_product_remove$', views.CartProductRemove.as_view(), name='cart_product_remove'),
 
     url(r'^admin_e_invoice_create$', views.CreateEZPayInvoiceFromOrder.as_view(), name='admin-e-invoice-create'),
+    url(r'^admin_order_paper_invoice_create$', views.AdminOrderPaperInvoiceUpdate.as_view(),
+        name='admin-order-paper-invoice-create'),
+    url(r'^admin_order_paper_invoice_update$', views.AdminOrderPaperInvoiceUpdate.as_view(),
+        name='admin-order-paper-invoice-update'),
 ]
