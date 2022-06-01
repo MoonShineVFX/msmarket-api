@@ -201,10 +201,3 @@ class AdminOrderPaperInvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('id', 'invoice')
-
-    def create(self, validated_data):
-        type_str = validated_data.pop("invoice_type")
-        if type_str == "paper":
-            return PaperInvoice.objects.create(**validated_data)
-        else:
-            return None

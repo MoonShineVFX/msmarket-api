@@ -537,8 +537,10 @@ class AdminOrderPaperInvoiceUpdate(APIView):
     permission_classes = (IsAuthenticated, IsAdminUser)
 
     def post(self, request, *args, **kwargs):
-        order_id = self.request.data.get('id', None)
-        invoice_number = self.request.data.get('invoice', None)
+        serializer = serializers.AdminOrderPaperInvoiceSerializer(data=self.request.data)
+        serializer.is_valid()
+        order_id = serializer.validated_data.get('id')
+        invoice_number = serializer.validated_data.get('invoice_number')
         order = get_object_or_404(Order, id=order_id)
         Order.objects.filter(id=order_id).update(invoice_number=invoice_number)
         PaperInvoice.objects.filter(id=order.paper_invoice_id).update(invoice_number=invoice_number)
