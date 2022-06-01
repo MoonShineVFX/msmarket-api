@@ -16,6 +16,7 @@ from ..product.models import Product, Image
 from ..category.models import Tag
 from ..lang.models import LangConfig
 
+from ..user.serializers import CommonCustomerSerializer
 from ..category.serializers import TagNameOnlySerializer
 from ..product.serializers import ProductListSerializer, ImagePositionTypeSerializer
 from . import serializers
@@ -40,12 +41,10 @@ class CommonView(APIView, SwitchLangMixin):
         tags = Tag.objects.all()
         lang_config = LangConfig.objects.only('updated_at').latest('updated_at')
         data = {
-            "userId": request.user.id if request.user.is_authenticated else None,
-            "userName": request.user.name if request.user.is_authenticated else None,
             "tags": TagNameOnlySerializer(tags, many=True).data,
             "langConfigUpdatedAt": lang_config.updated_at
         }
-
+        data.update(CommonCustomerSerializer(request.user).data)
         return Response(data, status=status.HTTP_200_OK)
 
 

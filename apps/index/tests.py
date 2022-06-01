@@ -53,6 +53,15 @@ class IndexTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_common_with_login(self):
+        url = '/api/common'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_index(self):
         url = '/api/index'
         response = self.client.post(url)

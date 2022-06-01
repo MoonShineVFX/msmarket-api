@@ -47,6 +47,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         read_only_fields = ['email']
 
 
+class CommonCustomerSerializer(serializers.Serializer):
+    userId = serializers.IntegerField(source="id", allow_null=True)
+    userName = serializers.CharField(source="name", allow_null=True)
+    realName = serializers.CharField(source="real_name", allow_null=True)
+    email = serializers.CharField(allow_null=True)
+    address = serializers.CharField(allow_null=True)
+
+
 class AdminEditorSerializer(serializers.ModelSerializer):
     createTime = serializers.SerializerMethodField()
     updateTime = serializers.SerializerMethodField()
@@ -137,3 +145,4 @@ class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField()
     newPassword = serializers.CharField(source="new_password1")
     confirmNewPassword = serializers.CharField(source="new_password2")
+
