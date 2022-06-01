@@ -134,10 +134,11 @@ class OrderDetailSerializer(OrderSerializer):
 class AdminOrderListSerializer(OrderSerializer):
     tradeNumber = serializers.SerializerMethodField()
     account = serializers.SerializerMethodField()
+    invoiceType = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ('id', 'orderNumber', 'tradeNumber', 'price', 'account', 'status', 'invoice',
+        fields = ('id', 'orderNumber', 'tradeNumber', 'price', 'account', 'status', 'invoice', 'invoiceType',
                   'createdAt', 'paidAt', 'paidBy')
 
     def get_tradeNumber(self, instance):
@@ -145,6 +146,9 @@ class AdminOrderListSerializer(OrderSerializer):
 
     def get_account(self, instance):
         return instance.user.email
+
+    def get_invoiceType(self, instance):
+        return Order.INVOICE_TYPE[instance.invoice_type]
 
 
 class AdminOrderDetailSerializer(OrderDetailSerializer):
