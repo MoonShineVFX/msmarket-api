@@ -575,7 +575,7 @@ class AdminOrderExport(APIView):
                 "success_payment__trade_no", "invoice_number", "paper_invoice__real_name", "paper_invoice__address",
                 "paper_invoice__receiver_name", "paper_invoice__receiver_address", "invoice_type", "paper_invoice__type",
                 "paper_invoice__company_name", "paper_invoice__tax_number",
-            ).filter(created_at__gte=first_day, created_at__lte=last_day)
+            ).filter(created_at__gte=first_day, created_at__lte=last_day).order_by("id")
             title = ["ID", "訂單編號", "會員帳號", "金額", "訂單狀態", "訂單成立時間", "付款時間", "付款方式",
                      "交易序號", "發票號碼", "訂購人", "訂購人地址",
                      "收件人", "收件地址", "發票類型", "紙本發票類型",
