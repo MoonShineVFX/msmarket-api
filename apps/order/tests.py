@@ -35,6 +35,12 @@ class OrderTest(TestCase):
                                     price=Decimal(1), model_size=0,
                                     model_count=4, texture_size="1800x1800", creator_id=1)
 
+    def test_order_is_expired(self):
+        order = Order.objects.create(user=self.user, merchant_order_no="MSM20211227000013", amount=1000,
+                                     invoice_counter=5, invoice_type=1)
+
+        assert not order.is_expired
+
     def test_encrypt_with_AES_and_SHA(self):
         trade_info = {
             # 這些是藍新在傳送參數時的必填欄位
@@ -294,9 +300,12 @@ class OrderTest(TestCase):
     def test_order_list(self):
         today_str = timezone.now().strftime("%Y%m%d")
         merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
-        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=0)
 
         merchant_order_no = "MSM{}{:06d}".format(today_str, 2)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 3)
         Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("100"), status=2)
 
         url = '/api/orders'
@@ -304,6 +313,25 @@ class OrderTest(TestCase):
         response = self.client.post(url)
         assert response.status_code == 200
         print(response.data)
+        assert response.data["list"][0]["status"] == 'unpaid'
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_order_list_expired(self):
+        import datetime
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"),
+                                     status=0)
+        expired_time = timezone.now() - datetime.timedelta(days=3)
+        Order.objects.filter(id=order.id).update(created_at=expired_time)
+
+        url = '/api/orders'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url)
+        assert response.status_code == 200
+        print(response.data)
+        assert response.data["list"][0]["status"] == 'fail'
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -711,4 +739,41 @@ class OrderTest(TestCase):
         b64_bytes = base64.b64decode(b64_str)
         decode_str = b64_bytes.decode()
         decode_dict = json.loads(decode_str)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_order_export(self):
+        import csv
+        import io
+
+        paper_invoice = PaperInvoice.objects.create(
+            real_name="real_name", address="address", receiver_name="receiver_name",
+            receiver_address="receiver_address", company_name="company_name", tax_number="12345678", type=3,
+        )
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"),
+                                     status=1, invoice_type=1, paper_invoice=paper_invoice)
+
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 2)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
+
+        url = '/api/admin_order_export'
+        data = {
+            "start": "2022-01",
+            "end": "2022-12",
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format="json")
+
+        assert response.status_code == 200
+        print(response.get('Content-Disposition'))
+        self.assertEquals(
+            response.get('Content-Disposition'),
+            'attachment; filename="MoonshineMarket3D_orders_2022-01_2022-12.csv"'
+        )
+        content = response.content.decode('utf-8')
+        cvs_reader = csv.reader(io.StringIO(content))
+        body = list(cvs_reader)
+        print(body)
 

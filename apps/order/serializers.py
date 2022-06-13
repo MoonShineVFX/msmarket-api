@@ -92,7 +92,10 @@ class OrderSerializer(serializers.ModelSerializer):
         return instance.invoice_number if instance.invoice_number else ""
 
     def get_status(self, instance):
-        return Order.STATUS[instance.status]
+        if instance.status == 0 and instance.is_expired:
+            return Order.STATUS[Order.FAIL]
+        else:
+            return Order.STATUS[instance.status]
 
     def get_paidAt(self, instance):
         return instance.paid_at if instance.paid_at else ""
@@ -201,3 +204,15 @@ class AdminOrderPaperInvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('id', 'invoice')
+
+
+class AdminOrderExportTimeRangeSerializer(serializers.Serializer):
+    start = serializers.RegexField(regex="^[0-9]{4}-[0-9]{2}$")
+    end = serializers.RegexField(regex="^[0-9]{4}-[0-9]{2}$")
+
+
+class AdminOrderExportDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ('id', 'invoice')
+

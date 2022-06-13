@@ -23,4 +23,6 @@ urlpatterns = [
         name='admin-order-paper-invoice-create'),
     url(r'^admin_order_paper_invoice_update$', views.AdminOrderPaperInvoiceUpdate.as_view(),
         name='admin-order-paper-invoice-update'),
+
+    url(r'^admin_order_export$', views.AdminOrderExport.as_view(), name='admin-order-export'),
 ]

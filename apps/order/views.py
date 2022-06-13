@@ -1,16 +1,19 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import csv
 import json
+import calendar
+import datetime
 from django.utils import timezone
 import requests
 from decimal import Decimal
 from django.db import transaction
-from django.db.models import F
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, CreateAPIView, GenericAPIView
 from ..shortcuts import PostDestroyView, SwitchLangMixin, PostCreateView, PostUpdateView
+from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
@@ -187,7 +190,7 @@ class NewebpayMixin(object):
             # 這些是藍新在傳送參數時的必填欄位
             "MerchantID": settings.NEWEBPAY_ID,
             "MerchantOrderNo": order.merchant_order_no,
-            "TimeStamp": timezone.now().timestamp(),
+            "TimeStamp": order.created_at,
             "RespondType": "JSON",
             "Amt": int(order.amount),  # 訂單金額
             "Version": self.version,
@@ -545,6 +548,48 @@ class AdminOrderPaperInvoiceUpdate(APIView):
         Order.objects.filter(id=order_id).update(invoice_number=invoice_number)
         PaperInvoice.objects.filter(id=order.paper_invoice_id).update(invoice_number=invoice_number)
         return Response(self.request.data, status=status.HTTP_200_OK)
+
+
+class AdminOrderExport(APIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def post(self, request, *args, **kwargs):
+        serializer = serializers.AdminOrderExportTimeRangeSerializer(data=request.data)
+        if serializer.is_valid():
+            start = serializer.validated_data['start']
+            end = serializer.validated_data['end']
+
+            first_day = datetime.datetime(int(start[:4]), int(start[-2:]), 1)
+            last_year = int(end[:4])
+            last_month = int(end[-2:])
+            last_day = datetime.datetime(last_year, last_month, calendar.monthrange(last_year, last_month)[1])
+
+            response = HttpResponse(
+                content_type='text/csv',
+                headers={
+                    'Content-Disposition': 'attachment; filename="MoonshineMarket3D_orders_{}_{}.csv"'.format(start, end)},
+            )
+            order_list = Order.objects.values_list(
+                "id", "merchant_order_no", "user__email", "amount", "status", "created_at", "paid_at", "paid_by",
+                "success_payment__trade_no", "invoice_number", "paper_invoice__real_name", "paper_invoice__address",
+                "paper_invoice__receiver_name", "paper_invoice__receiver_address", "invoice_type", "paper_invoice__type",
+                "paper_invoice__company_name", "paper_invoice__tax_number",
+            ).filter(created_at__gte=first_day, created_at__lte=last_day)
+            title = ["ID", "訂單編號", "會員帳號", "金額", "訂單狀態", "訂單成立時間", "付款時間", "付款方式",
+                     "交易序號", "發票號碼", "訂購人", "訂購人地址",
+                     "收件人", "收件地址", "發票類型", "紙本發票類型",
+                     "公司名稱", "統一編號"]
+
+            writer = csv.writer(response)
+            writer.writerow(title)
+            for value in order_list:
+                line = list(value)
+                line[14] = Order.INVOICE_TYPE[line[14]]
+                line[15] = PaperInvoice.TYPE_NAME[line[15]] if line[15] is not None else ''
+                writer.writerow(line)
+            return response
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TestCookie(APIView):

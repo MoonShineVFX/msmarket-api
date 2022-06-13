@@ -1,3 +1,5 @@
+from django.utils import timezone
+import datetime
 from django.db import models
 from apps.user.models import EditorBaseModel
 from ..product.models import Product
@@ -53,6 +55,13 @@ class Order(models.Model):
     SUCCESS = 1
     FAIL = 2
     CANCEL = 3
+
+    @property
+    def is_expired(self):
+        utc_expired_datetime = (
+                self.created_at + datetime.timedelta(days=2, hours=8)
+                                ).replace(hour=16, minute=0, second=0, microsecond=0)
+        return True if timezone.now() > utc_expired_datetime else False
 
 
 class NewebpayResponse(models.Model):
