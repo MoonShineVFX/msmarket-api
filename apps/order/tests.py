@@ -758,13 +758,10 @@ class OrderTest(TestCase):
         merchant_order_no = "MSM{}{:06d}".format(today_str, 2)
         Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"), status=1)
 
-        url = '/api/admin_order_export'
-        data = {
-            "start": "2022-01",
-            "end": "2022-12",
-        }
+        url = '/api/admin_order_export?start=2022-01&end=2022-12'
+
         self.client.force_authenticate(user=self.admin)
-        response = self.client.post(url, data=data, format="json")
+        response = self.client.get(url)
 
         assert response.status_code == 200
         print(response.get('Content-Disposition'))

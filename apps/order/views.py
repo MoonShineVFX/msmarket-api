@@ -554,12 +554,10 @@ class AdminOrderExport(APIView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
-    def post(self, request, *args, **kwargs):
-        serializer = serializers.AdminOrderExportTimeRangeSerializer(data=request.data)
-        if serializer.is_valid():
-            start = serializer.validated_data['start']
-            end = serializer.validated_data['end']
-
+    def get(self, request, *args, **kwargs):
+        start = self.request.query_params.get("start", None)
+        end = self.request.query_params.get("end", None)
+        if start and end:
             first_day = datetime.datetime(int(start[:4]), int(start[-2:]), 1)
             last_year = int(end[:4])
             last_month = int(end[-2:])
@@ -589,7 +587,7 @@ class AdminOrderExport(APIView):
                 line[15] = PaperInvoice.TYPE_NAME[line[15]] if line[15] is not None else ''
                 writer.writerow(line)
             return response
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class TestCookie(APIView):
