@@ -215,7 +215,7 @@ class ProductDetailSerializer(DetailImgUrlMixin):
                   'tags', 'isActive', 'models', 'previews', 'relativeProducts')
 
     def get_relativeProducts(self, instance):
-        products = Product.objects.filter(~Q(id=instance.id), tags__in=instance.tags.all())[:4]
+        products = Product.objects.filter(~Q(id=instance.id), tags__in=instance.tags.all()).distinct()[:4]
         return RelativeProductListSerializer(products, many=True).data
 
     def get_previews(self, instance):
