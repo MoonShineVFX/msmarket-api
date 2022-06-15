@@ -555,49 +555,63 @@ class AdminOrderExport(APIView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
+    def report_response(self, start, end):
+        first_day = datetime.datetime(int(start[:4]), int(start[-2:]), 1)
+        last_year = int(end[:4])
+        last_month = int(end[-2:])
+        last_day = datetime.datetime(last_year, last_month, calendar.monthrange(last_year, last_month)[1])
+
+        filename = "MoonshineMarket3D_orders_{}_{}.xls".format(start, end)
+
+        order_list = Order.objects.values_list(
+            "id", "merchant_order_no", "user__email", "amount", "status", "created_at", "paid_at", "paid_by",
+            "success_payment__trade_no", "invoice_number", "paper_invoice__real_name", "paper_invoice__address",
+            "paper_invoice__receiver_name", "paper_invoice__receiver_address", "invoice_type", "paper_invoice__type",
+            "paper_invoice__company_name", "paper_invoice__tax_number",
+        ).filter(created_at__gte=first_day, created_at__lte=last_day).order_by("id")
+
+        title = ["ID", "訂單編號", "會員帳號", "金額", "訂單狀態", "訂單成立時間", "付款時間", "付款方式",
+                 "交易序號", "發票號碼", "訂購人", "訂購人地址",
+                 "收件人", "收件地址", "發票類型", "紙本發票類型",
+                 "公司名稱", "統一編號"]
+
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True, 'remove_timezone': True})
+        worksheet = workbook.add_worksheet('orders')
+
+        for col_num, data in enumerate(title):
+            worksheet.write(0, col_num, data)
+
+        for row_num, data in enumerate(order_list):
+            worksheet.write_row(1 + row_num, 0, data)
+
+        workbook.close()
+        output.seek(0)
+
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.ms-excel'
+        )
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
+
     def get(self, request, *args, **kwargs):
         start = self.request.query_params.get("start", None)
         end = self.request.query_params.get("end", None)
         if start and end:
-            first_day = datetime.datetime(int(start[:4]), int(start[-2:]), 1)
-            last_year = int(end[:4])
-            last_month = int(end[-2:])
-            last_day = datetime.datetime(last_year, last_month, calendar.monthrange(last_year, last_month)[1])
-
-            filename = "MoonshineMarket3D_orders_{}_{}.xls".format(start, end)
-
-            order_list = Order.objects.values_list(
-                "id", "merchant_order_no", "user__email", "amount", "status", "created_at", "paid_at", "paid_by",
-                "success_payment__trade_no", "invoice_number", "paper_invoice__real_name", "paper_invoice__address",
-                "paper_invoice__receiver_name", "paper_invoice__receiver_address", "invoice_type", "paper_invoice__type",
-                "paper_invoice__company_name", "paper_invoice__tax_number",
-            ).filter(created_at__gte=first_day, created_at__lte=last_day).order_by("id")
-
-            title = ["ID", "訂單編號", "會員帳號", "金額", "訂單狀態", "訂單成立時間", "付款時間", "付款方式",
-                     "交易序號", "發票號碼", "訂購人", "訂購人地址",
-                     "收件人", "收件地址", "發票類型", "紙本發票類型",
-                     "公司名稱", "統一編號"]
-
-            output = io.BytesIO()
-            workbook = xlsxwriter.Workbook(output, {'in_memory': True, 'remove_timezone': True})
-            worksheet = workbook.add_worksheet('orders')
-
-            for col_num, data in enumerate(title):
-                worksheet.write(0, col_num, data)
-
-            for row_num, data in enumerate(order_list):
-                worksheet.write_row(1+row_num, 0, data)
-
-            workbook.close()
-            output.seek(0)
-
-            response = HttpResponse(
-                output,
-                content_type='application/vnd.ms-excel'
-            )
-            response['Content-Disposition'] = 'attachment; filename=%s' % filename
+            response = self.report_response(start, end)
             return response
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, *args, **kwargs):
+        start = self.request.data.get("start", None)
+        end = self.request.data.get("end", None)
+        if start and end:
+            response = self.report_response(start, end)
+            return response
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class TestCookie(APIView):
