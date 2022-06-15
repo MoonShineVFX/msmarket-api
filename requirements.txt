@@ -44,3 +44,4 @@ pycryptodome==3.12.0
 django-allauth==0.45.0
 dj-rest-auth==2.2.3
 django-modeltranslation==0.17.5
+xlsxwriter==3.0.3

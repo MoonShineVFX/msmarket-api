@@ -743,9 +743,8 @@ class OrderTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_admin_order_export(self):
-        import csv
         import io
-
+        import pandas as pd
         paper_invoice = PaperInvoice.objects.create(
             real_name="real_name", address="address", receiver_name="receiver_name",
             receiver_address="receiver_address", company_name="company_name", tax_number="12345678", type=3,
@@ -767,10 +766,10 @@ class OrderTest(TestCase):
         print(response.get('Content-Disposition'))
         self.assertEquals(
             response.get('Content-Disposition'),
-            'attachment; filename="MoonshineMarket3D_orders_2022-01_2022-12.csv"'
+            'attachment; filename=MoonshineMarket3D_orders_2022-01_2022-12.xlsx'
         )
-        content = response.content.decode('utf-8')
-        cvs_reader = csv.reader(io.StringIO(content))
-        body = list(cvs_reader)
-        print(body)
+        content = response.content
+        f = io.BytesIO(response.content)
+        df = pd.io.excel.read_excel(f)
+        print(df)
 
