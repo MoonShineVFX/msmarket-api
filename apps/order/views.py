@@ -564,7 +564,7 @@ class AdminOrderExport(APIView):
             last_month = int(end[-2:])
             last_day = datetime.datetime(last_year, last_month, calendar.monthrange(last_year, last_month)[1])
 
-            filename = "MoonshineMarket3D_orders_{}_{}.xlsx".format(start, end)
+            filename = "MoonshineMarket3D_orders_{}_{}.xls".format(start, end)
 
             order_list = Order.objects.values_list(
                 "id", "merchant_order_no", "user__email", "amount", "status", "created_at", "paid_at", "paid_by",
@@ -593,7 +593,7 @@ class AdminOrderExport(APIView):
 
             response = HttpResponse(
                 output,
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                content_type='application/vnd.ms-excel'
             )
             response['Content-Disposition'] = 'attachment; filename=%s' % filename
             return response

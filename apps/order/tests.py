@@ -766,7 +766,7 @@ class OrderTest(TestCase):
         print(response.get('Content-Disposition'))
         self.assertEquals(
             response.get('Content-Disposition'),
-            'attachment; filename=MoonshineMarket3D_orders_2022-01_2022-12.xlsx'
+            'attachment; filename=MoonshineMarket3D_orders_2022-01_2022-12.xls'
         )
         content = response.content
         f = io.BytesIO(response.content)
