@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Sum, Case, When
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
 from ..shortcuts import PostListView, PostCreateView, PostUpdateView, WebUpdateView
@@ -202,6 +202,7 @@ class ActiveAccountView(APIView):
                 user = None
             if user and active_account_token_generator.check_token(user, token):
                 EmailAddress.objects.filter(user_id=user.id, email=user.email).update(verified=True)
+                User.objects.filter(id=user.id).update(email_verified=True)
                 return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -251,6 +252,13 @@ class AdminUserList(PostListView):
     serializer_class = serializers.AdminUserSerializer
     admin_profile = AdminProfile.objects.select_related("creator", "updater")
     queryset = admin_queryset
+
+
+class AdminCustomerView(PostListView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.AdminCustomerSerializer
+    queryset = User.objects.filter(is_staff=False)
 
 
 class AdminUserSearch(AdminUserList):

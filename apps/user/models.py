@@ -17,6 +17,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_login = models.DateTimeField(null=True, blank=True)
     password_updated_at = models.DateTimeField(null=True)
     reset_mail_sent = models.DateTimeField(null=True)
+    email_verified = models.BooleanField(default=False)
     products = models.ManyToManyField('product.Product', through='CustomerProduct')
 
     objects = UserManager()
@@ -39,7 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         if self.is_staff:
             return True
         else:
-            return self.emailaddress_set.first().verified if self.emailaddress_set.first() else False
+            return self.email_verified
 
     @property
     def account(self):

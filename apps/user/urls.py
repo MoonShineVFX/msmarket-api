@@ -8,7 +8,9 @@ urlpatterns = [
     url(r'^active_account$',
         views.ActiveAccountView.as_view(), name='active-account'),
     url(r'^login$', views.ObtainTokenView.as_view(), name='login'),
+
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
+    url(r'^admin_customers$', views.AdminCustomerView.as_view(), name='admin-customer-list'),
 
     url('^google_login',  views.GoogleLogin.as_view(), name='google-login'),
     url(r'^accounts/', include('allauth.urls'), name='socialaccount_signup'), # for socialaccount_signup reverse

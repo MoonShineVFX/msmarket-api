@@ -82,7 +82,8 @@ class UserTest(TestCase):
         response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
-        assert User.objects.filter(email="test@mail.com").exists()
+        user = User.objects.filter(email="test@mail.com", email_verified=True).first()
+        assert user is not None
         assert EmailAddress.objects.filter(email="test@mail.com", primary=True, verified=True).exists()
         assert user.is_active
 
@@ -136,6 +137,8 @@ class UserTest(TestCase):
     @debugger_queries
     def test_JWT_scope(self):
         EmailAddress.objects.create(user=self.user, verified=True)
+        self.user.email_verified = True
+        self.user.save()
 
         from rest_framework_simplejwt.tokens import RefreshToken
         refresh = RefreshToken.for_user(self.user)
@@ -317,6 +320,15 @@ class UserTest(TestCase):
         print(response.data)
         assert response.status_code == 200
         assert User.objects.filter(id=self.user.id, real_name="new").exists()
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_customers(self):
+        url = '/api/admin_customers'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
 
     @override_settings(DEBUG=True)
     @debugger_queries

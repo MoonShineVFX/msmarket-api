@@ -47,6 +47,17 @@ class CustomerSerializer(serializers.ModelSerializer):
         read_only_fields = ['email']
 
 
+class AdminCustomerSerializer(serializers.ModelSerializer):
+    realName = serializers.CharField(source="real_name")
+    createTime = serializers.DateTimeField(source="created_at")
+    emailVerified = serializers.BooleanField(source="email_verified")
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'realName', 'address', 'createTime', 'emailVerified')
+        read_only_fields = ['email']
+
+
 class CommonCustomerSerializer(serializers.Serializer):
     userId = serializers.IntegerField(source="id", allow_null=True)
     userName = serializers.CharField(source="name", allow_null=True)
