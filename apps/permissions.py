@@ -6,6 +6,11 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 class IsCustomer(BasePermission):
     def has_permission(self, request, view):
+        return not request.user.is_staff
+
+
+class TokenScopeIsCustomer(BasePermission):
+    def has_permission(self, request, view):
         return 'scope' in request.auth.payload and request.auth.payload['scope'] == 'customer'
 
 

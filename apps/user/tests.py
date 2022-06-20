@@ -117,7 +117,7 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_login(self):
+    def test_customer_login(self):
         self.body = {'recaptcha': '123'}
 
         url = '/api/login'
@@ -125,6 +125,17 @@ class UserTest(TestCase):
         response = self.client.post(url, data=self.body, format='json')
         print(response.data)
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_customer_login_with_admin(self):
+        self.body = {'recaptcha': '123'}
+
+        url = '/api/login'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=self.body, format='json')
+        print(response.data)
+        assert response.status_code == 403
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -176,6 +187,18 @@ class UserTest(TestCase):
         print(mail.outbox[0].subject)
         print(mail.outbox[0].body)
         assert mail.outbox[0]
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_forget_password_with_admin(self):
+        url = '/api/forget_password'
+        data = {
+            "email": "admin01@mail.com",
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+        assert not mail.outbox
 
     @override_settings(DEBUG=True)
     @debugger_queries

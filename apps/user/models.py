@@ -37,6 +37,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_active(self):
+        """
+        admin accounts don't need email verification
+        """
         if self.is_staff:
             return True
         else:

@@ -6,7 +6,7 @@ from dj_rest_auth.views import LoginView, PasswordResetView, PasswordResetConfir
 urlpatterns = [
     url(r'^register$', views.RegisterView.as_view(), name='register'),
     url(r'^active_account$',
-        views.ActiveAccountView.as_view(), name='active-account'),
+        views.CustomerActiveAccountView.as_view(), name='customer-active-account'),
     url(r'^login$', views.ObtainTokenView.as_view(), name='login'),
 
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
@@ -18,9 +18,9 @@ urlpatterns = [
     url(r'^my_account$', views.CustomerAccountDetailView.as_view(), name='customer-account-detail'),
     url(r'^account_update$', views.CustomerAccountUpdateView.as_view(), name='customer-account-update'),
 
-    url(r'^forget_password$', views.ForgetPasswordView.as_view(), name='forget-password'),
-    url(r'^reset_password$', views.ResetPasswordView.as_view(), name='reset-password'),
-    url(r'^change_password$', views.ChangePasswordView.as_view(), name='change-password'),
+    url(r'^forget_password$', views.CustomerForgetPasswordView.as_view(), name='customer-forget-password'),
+    url(r'^reset_password$', views.CustomerResetPasswordView.as_view(), name='customer-reset-password'),
+    url(r'^change_password$', views.CustomerChangePasswordView.as_view(), name='customer-change-password'),
 
     #url(r'^rest_register$', RegisterView.as_view(), name='rest-register'),
     #url(r'^verify_email/(?P<key>[-:\w]+)$', VerifyEmailView.as_view(), name='account_confirm_email'),

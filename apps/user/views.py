@@ -10,6 +10,7 @@ from rest_framework import status
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication, recaptcha_valid_or_401
+from ..permissions import IsCustomer
 from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import AnonRateThrottle
@@ -53,7 +54,7 @@ class RegisterView(APIView):
 
 class ObtainTokenView(APIView):
     authentication_classes = (BasicAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsCustomer)
 
     def get(self, request):
         return self.post(request)
@@ -80,6 +81,9 @@ class ObtainTokenView(APIView):
 
 
 class AdminObtainTokenView(APIView):
+    authentication_classes = (BasicAuthentication,)
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
     def get(self, request):
         return self.post(request)
 
@@ -136,14 +140,14 @@ reset_password_token_generator = TimeLimitedTokenGenerator()
 active_account_token_generator = ActiveAccountTokenGenerator()
 
 
-class ForgetPasswordView(APIView):
+class CustomerForgetPasswordView(APIView):
     throttle_classes = [AnonRateThrottle]
 
     def post(self, request):
         serializer = serializers.ForgetPasswordSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
-            user = User.objects.filter(email=email).first()
+            user = User.objects.filter(email=email, is_staff=False).first()
             if user:
                 # reset mail can only be sent every 3 min
                 if user.reset_mail_sent and timezone.now() - user.reset_mail_sent < timedelta(minutes=3):
@@ -164,7 +168,7 @@ class ForgetPasswordView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class ResetPasswordView(APIView):
+class CustomerResetPasswordView(APIView):
     throttle_classes = [AnonRateThrottle]
 
     def post(self, request):
@@ -176,7 +180,7 @@ class ResetPasswordView(APIView):
 
             try:
                 uid = force_text(urlsafe_base64_decode(uidb64))
-                user = User.objects.get(pk=uid)
+                user = User.objects.get(pk=uid, is_staff=False)
             except (TypeError, ValueError, OverflowError, User.DoesNotExist) as e:
                 user = None
 
@@ -188,7 +192,7 @@ class ResetPasswordView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class ActiveAccountView(APIView):
+class CustomerActiveAccountView(APIView):
     throttle_classes = [AnonRateThrottle]
 
     def get(self, request):
@@ -197,7 +201,7 @@ class ActiveAccountView(APIView):
         if uidb64 and token:
             try:
                 uid = force_text(urlsafe_base64_decode(uidb64))
-                user = User.objects.get(pk=uid)
+                user = User.objects.get(pk=uid, is_staff=False)
             except (TypeError, ValueError, OverflowError, User.DoesNotExist) as e:
                 user = None
             if user and active_account_token_generator.check_token(user, token):
@@ -207,7 +211,7 @@ class ActiveAccountView(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChangePasswordView(APIView):
+class CustomerChangePasswordView(APIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
 
