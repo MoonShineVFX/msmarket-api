@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime, time
 from django.db.models import Prefetch, Sum, Case, When
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveAPIView
@@ -15,8 +15,9 @@ from rest_framework.authentication import BasicAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import AnonRateThrottle
 
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode, base36_to_int
 from django.utils.encoding import force_bytes, force_text
+from django.utils.crypto import constant_time_compare
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 
@@ -47,7 +48,7 @@ class RegisterView(APIView):
         body = '親愛的會員您好：\n' \
                '收到這封電子郵件，表示您註冊本網站會員，若您未使用此功能，表示有其他人輸入錯誤信箱。\n' \
                '帳號啟用信網址，點擊後啟用帳號: {0}/active_account?uid={1}&token={2}\n' \
-               '＊網址有效期限為系統發行1天內\n' \
+               '＊網址有效期限為1天內\n' \
                '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, uid, token)
         send_mail('moonshine模型庫 帳號啟用信', body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
 
@@ -129,6 +130,48 @@ class TimeLimitedTokenGenerator(PasswordResetTokenGenerator):
 
 
 class ActiveAccountTokenGenerator(PasswordResetTokenGenerator):
+    def check_token(self, user, token):
+        """
+        Check that a password reset token is correct for a given user.
+        """
+        if not (user and token):
+            return False
+        # Parse the token
+        try:
+            ts_b36, _ = token.split("-")
+            # RemovedInDjango40Warning.
+            legacy_token = len(ts_b36) < 4
+        except ValueError:
+            return False
+
+        try:
+            ts = base36_to_int(ts_b36)
+        except ValueError:
+            return False
+
+        # Check that the timestamp/uid has not been tampered with
+        if not constant_time_compare(self._make_token_with_timestamp(user, ts), token):
+            # RemovedInDjango40Warning: when the deprecation ends, replace
+            # with:
+            #   return False
+            if not constant_time_compare(
+                self._make_token_with_timestamp(user, ts, legacy=True),
+                token,
+            ):
+                return False
+
+        # RemovedInDjango40Warning: convert days to seconds and round to
+        # midnight (server time) for pre-Django 3.1 tokens.
+        now = self._now()
+        if legacy_token:
+            ts *= 24 * 60 * 60
+            ts += int((now - datetime.combine(now.date(), time.min)).total_seconds())
+        # Check the timestamp is within limit.
+        if (self._num_seconds(now) - ts) > settings.EMAIL_VERIFICATION_TIMEOUT:
+            return False
+
+        return True
+
     def _make_hash_value(self, user, timestamp):
         email_field = user.get_email_field_name()
         email = getattr(user, email_field, '') or ''
@@ -160,7 +203,7 @@ class CustomerForgetPasswordView(APIView):
                 body = '親愛的會員您好：\n' \
                        '收到這封電子郵件，表示您嘗試透過忘記密碼功能重置密碼，若您未使用此功能，表示有其他人輸入錯誤信箱，請直接刪除即可。\n' \
                        '密碼重置網址，點擊後重置密碼: {0}/reset_password?uid={1}&token={2}\n' \
-                       '＊網址有效期限為系統發行3天內\n' \
+                       '＊網址有效期限為30分內\n' \
                        '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, uid, token)
                 send_mail('moonshine模型庫 忘記密碼重置信', body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
 

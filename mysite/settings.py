@@ -251,7 +251,10 @@ if 'test' in sys.argv:
 
 
 # url path for image on gcp
-IMAGE_ROOT = 'https://market-dev.moonshine.tw'
+if PRODUCTION:
+    IMAGE_ROOT = 'https://market.moonshine.tw'
+else:
+    IMAGE_ROOT = 'https://market-dev.moonshine.tw'
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True
@@ -311,13 +314,14 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
 API_HOST = os.environ.get('API_HOST', 'localhost')
-PASSWORD_RESET_TIMEOUT = 1800 # 30 min in seconds
+PASSWORD_RESET_TIMEOUT = 1800   # 30 min in seconds
+EMAIL_VERIFICATION_TIMEOUT = 86400   # 1 day in seconds
 
 
 # django-modeltranslation
 gettext = lambda s: s
 LANGUAGES = (
-    ('zh', gettext('Chinese')), # The first language is treated as the default language.
+    ('zh', gettext('Chinese')),     # The first language is treated as the default language.
     ('en', gettext('English')),
 )
 MODELTRANSLATION_LANGUAGES = ('zh', 'en')
