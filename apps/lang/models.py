@@ -122,6 +122,7 @@ class LangConfig(models.Model):
     member_change_password = models.CharField(max_length=100,  null=True, blank=True)
     member_change_password_success = models.CharField(max_length=100,  null=True, blank=True)
     member_mobile_download_notice = models.CharField(max_length=100,  null=True, blank=True)
+    member_no_data = models.CharField(max_length=100,  null=True, blank=True)
     text_return_to_account = models.CharField(max_length=100,  null=True, blank=True)
     btn_saved = models.CharField(max_length=100,  null=True, blank=True)
 

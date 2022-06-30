@@ -128,6 +128,21 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_customer_login_without_email_verified(self):
+        EmailAddress.objects.create(user=self.user,  verified=True)
+
+        self.body = {'recaptcha': '123'}
+        url = '/api/guest_login'
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic dXNlcjAxQG1haWwuY29tOnBhc3N3b3Jk'
+        }
+        response = self.client.post(url, data=self.body, **auth_headers)
+
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_customer_login_with_admin(self):
         self.body = {'recaptcha': '123'}
 
