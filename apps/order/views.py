@@ -191,7 +191,7 @@ class NewebpayMixin(object):
             # 這些是藍新在傳送參數時的必填欄位
             "MerchantID": settings.NEWEBPAY_ID,
             "MerchantOrderNo": order.merchant_order_no,
-            "TimeStamp": order.created_at,
+            "TimeStamp": int(datetime.datetime.timestamp(order.created_at)),
             "RespondType": "JSON",
             "Amt": int(order.amount),  # 訂單金額
             "Version": self.version,

@@ -220,6 +220,18 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_NewebpayMixin_get_trade_info_query_string(self):
+        from .views import NewebpayMixin
+
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"))
+
+        result = NewebpayMixin().get_newebpay_payment_request_data(order=order)
+        print(result)
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_order_create(self):
         today_str = timezone.now().strftime("%Y%m%d")
         merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
