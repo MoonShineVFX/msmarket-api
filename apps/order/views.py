@@ -237,8 +237,12 @@ class OrderCreate(APIView, NewebpayMixin):
         sum_price = sum([cart.product.price for cart in carts])
 
         serializer = serializers.OrderCreateSerializer(data=self.request.data)
-        serializer.is_valid()
-        invoice_type = serializer.validated_data["invoice_type"]
+
+        if serializer.is_valid():
+            invoice_type = serializer.validated_data["invoice_type"]
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         bought_product_ids = CustomerProduct.objects.values_list("id", flat=True).filter(user_id=request.user.id, product_id__in=product_ids).all()
 
         if bought_product_ids:

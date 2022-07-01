@@ -204,6 +204,22 @@ class OrderTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_order_create_duplicate(self):
+        today_str = timezone.now().strftime("%Y%m%d")
+        merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
+        Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"))
+        Cart.objects.create(id=1, user_id=1, product_id=1)
+
+        url = '/api/order_create'
+        data = {"realName": "注音名稱", "address": "注音地址", "invoiceType": "paper", "paperInvoiceType": "duplicate",
+                "cartIds": [1], "receiverName": "注音名稱", "receiverAddress": "注音地址"}
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_order_create(self):
         today_str = timezone.now().strftime("%Y%m%d")
         merchant_order_no = "MSM{}{:06d}".format(today_str, 1)

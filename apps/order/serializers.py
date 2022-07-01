@@ -110,8 +110,8 @@ class OrderCreateSerializer(serializers.Serializer):
     invoiceType = serializers.CharField(max_length=100, source="invoice_type")
     receiverName = serializers.CharField(max_length=100, source="receiver_name")
     receiverAddress = serializers.CharField(max_length=100, source="receiver_address")
-    companyName = serializers.CharField(max_length=100, source="company_name")
-    taxNumber = serializers.CharField(max_length=8, source="tax_number")
+    companyName = serializers.CharField(max_length=100, source="company_name", required=False)
+    taxNumber = serializers.CharField(max_length=8, source="tax_number", required=False)
     paperInvoiceType = serializers.CharField(max_length=20, source="paper_invoice_type")
 
     def create(self, validated_data):
