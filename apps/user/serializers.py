@@ -165,6 +165,7 @@ class GoogleSocialLoginSerializer(SocialLoginSerializer):
     def validate(self, attrs):
         attrs = super().validate(attrs)
         user = attrs['user']
-        user.email_verified = True
-        user.save()
+        if not user.email_verified:
+            user.email_verified = True
+            user.save(update_fields=['email_verified'])
         return attrs
