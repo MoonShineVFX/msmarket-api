@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from django.db.models import Q
-from django.conf import settings
 from rest_framework.serializers import ValidationError
-from ..serializers import EditorBaseSerializer
 from rest_framework import serializers
+from ..serializers import EditorBaseSerializer
+from dj_rest_auth.registration.views import SocialLoginSerializer
 from .models import User, AdminProfile
 from allauth.account.models import EmailAddress
 
@@ -157,3 +156,15 @@ class ChangePasswordSerializer(serializers.Serializer):
     newPassword = serializers.CharField(source="new_password1")
     confirmNewPassword = serializers.CharField(source="new_password2")
 
+
+class GoogleSocialLoginSerializer(SocialLoginSerializer):
+    """Adds email_verified field for Google registration"""
+
+    email_verified = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        user = attrs['user']
+        user.email_verified = True
+        user.save()
+        return attrs

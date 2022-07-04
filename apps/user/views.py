@@ -335,6 +335,7 @@ CALLBACK_URL_YOU_SET_ON_GOOGLE = settings.API_HOST
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
+    serializer_class = serializers.GoogleSocialLoginSerializer
     callback_url = CALLBACK_URL_YOU_SET_ON_GOOGLE
     client_class = OAuth2Client
 
