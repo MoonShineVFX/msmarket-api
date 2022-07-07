@@ -271,7 +271,7 @@ class OrderCreate(APIView, NewebpayMixin):
         if invoice_type == "paper":
             paper_invoice = serializer.save()
             order_data["paper_invoice_id"] = paper_invoice.id
-            order_data["invoice_type"] = paper_invoice.id
+            order_data["invoice_type"] = Order.PAPER_INVOICE
 
         # 建立訂單
         order = Order.objects.create(**order_data)

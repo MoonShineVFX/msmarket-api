@@ -44,6 +44,8 @@ class Order(models.Model):
         0: "electronic",
         1: "paper",
     }
+    ELECTRONIC_INVOICE = 0
+    PAPER_INVOICE = 1
 
     STATUS = {
         0: "unpaid",
