@@ -19,10 +19,12 @@ pymysql.install_as_MySQLdb()
 # Set the project base directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Application is on local developing (for database selecting)
+LOCAL = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', False)
-PRODUCTION = os.environ.get('PRODUCTION', False)
+DEBUG = os.getenv("DEBUG", 'False').lower() in ('true', '1', 't')
+PRODUCTION = os.getenv("PRODUCTION", 'False').lower() in ('true', '1', 't')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -167,13 +169,12 @@ DATABASES = {
 
 }
 
-
-if PRODUCTION:
-    DATABASES['default'] = DATABASES['production']
+if LOCAL:
+    DATABASES['default'] = DATABASES['dev']
 elif 'test' in sys.argv:
     DATABASES['default'] = DATABASES['test']
 else:
-    DATABASES['default'] = DATABASES['dev']
+    DATABASES['default'] = DATABASES['production']
 
 
 # Password validation
@@ -235,7 +236,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Google Cloud Storage
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-GS_BUCKET_NAME = 'ms-image-storage'
+if PRODUCTION:
+    GS_BUCKET_NAME = 'ms-image-storage'
+else:
+    GS_BUCKET_NAME = 'ms-image-storage-dev'
+
 GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
 GS_FILE_OVERWRITE = False
 MEDIA_SERVICE_ACCOUNT_SECRET = os.environ.get('MEDIA_SERVICE_ACCOUNT_SECRET', None)
