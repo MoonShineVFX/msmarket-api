@@ -37,5 +37,5 @@ jobs:
           source: .
           region: ${{ env.REGION }}
           credentials: ${{ secrets.MODEL_LIB_GCP_SA_KEY }}
-          env_vars: PRODUCTION=true,DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},SQL_HOST=${{ secrets[steps.vars.outputs.SQL_HOST] }},DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }},API_HOST=${{ secrets[steps.vars.outputs.API_HOST] }},NEWEBPAY_ID=${{ secrets.NEWEBPAY_ID }},NEWEBPAY_HASHKEY=${{ secrets.NEWEBPAY_HASHKEY }},NEWEBPAY_HASHIV=${{ secrets.NEWEBPAY_HASHIV }}
+          env_vars: DB_USER=${{ secrets.DB_USER }},DB_PASS=${{ secrets.DB_PASS }},SQL_HOST=${{ secrets[steps.vars.outputs.SQL_HOST] }},DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }},API_HOST=${{ secrets[steps.vars.outputs.API_HOST] }}
           flags: "--add-cloudsql-instances ${{ env.PROJECT_ID }}:${{env.REGION}}:${{ env.SQL_INST }}"
