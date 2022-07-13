@@ -188,6 +188,11 @@ class NewebpayMixin(object):
 
     def get_trade_info_query_string(self, order):
         tw_expire_dt = order.created_at + datetime.timedelta(days=(settings.NEWEBPAY_EXPIRE_DAY-1), hours=8)
+
+        item_name = ""
+        for p in order.products.all():
+            item_name = item_name + "|" + p.title[:30] if item_name else p.title[:30]
+
         trade_info_dict = {
             # 這些是藍新在傳送參數時的必填欄位
             "MerchantID": settings.NEWEBPAY_ID,
@@ -196,7 +201,7 @@ class NewebpayMixin(object):
             "RespondType": "JSON",
             "Amt": int(order.amount),  # 訂單金額
             "Version": self.version,
-            "ItemDesc": "第一次串接就成功！",
+            "ItemDesc": item_name,
             "Email": order.user.email,
             "LoginType": 0,
             # --------------------------
@@ -211,6 +216,7 @@ class NewebpayMixin(object):
             "NotifyURL": "https://{}/api/newebpay_payment_notify".format(settings.API_HOST),
             "ClientBackURL": settings.NEWEBPAY_CLIENT_BACK_URL
         }
+        #print(trade_info_dict)
         return urlencode(trade_info_dict)
 
     def get_newebpay_payment_request_data(self, order):

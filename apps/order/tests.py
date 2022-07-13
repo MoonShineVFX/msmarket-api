@@ -226,7 +226,7 @@ class OrderTest(TestCase):
         today_str = timezone.now().strftime("%Y%m%d")
         merchant_order_no = "MSM{}{:06d}".format(today_str, 1)
         order = Order.objects.create(user=self.user, merchant_order_no=merchant_order_no, amount=Decimal("1000"))
-
+        order.products.set([1, 2])
         result = NewebpayMixin().get_newebpay_payment_request_data(order=order)
         print(result)
 
