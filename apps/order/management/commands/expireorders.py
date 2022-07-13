@@ -5,7 +5,7 @@ from ...models import Order
 
 
 class Command(BaseCommand):
-    help = "Update status of expired orders to 'expired'"
+    help = "Update status of expired orders to 'fail'"
 
     def handle(self, *args, **options):
         # 尋找過去最近的UTC 16:00，然後將 created_at < 2天前的UTC 16:00的訂單標記為過期
@@ -20,4 +20,4 @@ class Command(BaseCommand):
 
         Order.objects.filter(created_at__lte=utc_expired_dt).update(status=Order.FAIL)
         self.stdout.write("UTC now is %s" % time)
-        self.stdout.write("Update status of orders before UTC %s to expired. " % utc_expired_dt)
+        self.stdout.write("Update status of orders before UTC %s to fail. " % utc_expired_dt)
