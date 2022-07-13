@@ -187,6 +187,7 @@ class NewebpayMixin(object):
     version = "2.0"
 
     def get_trade_info_query_string(self, order):
+        tw_expire_dt = order.created_at + datetime.timedelta(days=(settings.NEWEBPAY_EXPIRE_DAY-1), hours=8)
         trade_info_dict = {
             # 這些是藍新在傳送參數時的必填欄位
             "MerchantID": settings.NEWEBPAY_ID,
@@ -203,7 +204,7 @@ class NewebpayMixin(object):
             "CREDIT": 1,
             "VACC": 1,
             "TradeLimit": settings.NEWEBPAY_TRADE_LIMIT,
-            "ExpireDate": settings.NEWEBPAY_EXPIRE_DATE,
+            "ExpireDate": tw_expire_dt.strftime("%Y%m%d"),
             # 即時付款完成後，以 form post 方式要導回的頁面
             "ReturnURL": "https://{}/order/payment_result?no={}".format(settings.API_HOST, order.merchant_order_no),
             # 訂單完成後，以背景 post 回報訂單狀況
