@@ -191,7 +191,7 @@ class NewebpayMixin(object):
 
         item_name = ""
         for p in order.products.all():
-            item_name = item_name + "|" + p.title[:30] if item_name else p.title[:30]
+            item_name = item_name + "|" + p.title if item_name else p.title
 
         trade_info_dict = {
             # 這些是藍新在傳送參數時的必填欄位
@@ -201,7 +201,7 @@ class NewebpayMixin(object):
             "RespondType": "JSON",
             "Amt": int(order.amount),  # 訂單金額
             "Version": self.version,
-            "ItemDesc": item_name,
+            "ItemDesc": item_name[:50],
             "Email": order.user.email,
             "LoginType": 0,
             # --------------------------
