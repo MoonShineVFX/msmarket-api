@@ -27,6 +27,8 @@ class OrderTest(TestCase):
         self.client = APIClient()
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
         self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
+        self.sys_admin = User.objects.create(id=3, name="sys_admin", email="sys_admin@mail.com", is_staff=True,
+                                             is_superuser=True)
 
         p1 = Product.objects.create(id=1, title="商品01", title_zh="商品01", title_en="product01", description="",
                                     price=Decimal(1), model_size=0,
@@ -804,3 +806,30 @@ class OrderTest(TestCase):
         df = pd.io.excel.read_excel(f)
         print(df)
 
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_clear_sessions_and_carts(self):
+        url = '/api/admin_clear_sessions_and_carts'
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        assert response.status_code == 403
+
+        self.client.force_authenticate(user=self.sys_admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_expire_orders(self):
+        url = '/api/admin_expire_orders'
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        assert response.status_code == 403
+
+        self.client.force_authenticate(user=self.sys_admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200

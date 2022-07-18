@@ -19,12 +19,17 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.authentication import BasicAuthentication
 from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
+from ..permissions import IsSuperuser
 
 from .models import Cart, Order, NewebpayPayment, NewebpayResponse, EInvoice, InvoiceError, PaperInvoice
 from ..product.models import Product
 from ..user.models import CustomerProduct
 from . import serializers
+
+from .management.commands.clearcarts import clear_carts
+from .management.commands.expireorders import expire_orders
 
 
 import hashlib
@@ -631,8 +636,28 @@ class AdminOrderExport(APIView):
 class TestCookie(APIView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
+
     def get(self, request):
         data = {
             "sessionid": self.request.session.session_key
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+class AdminClearSessionsAndCarts(APIView):
+    authentication_classes = [AdminJWTAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated, IsSuperuser)
+
+    def post(self, request, *args, **kwargs):
+        request.session.clear_expired()
+        cart_length = clear_carts()
+        return Response("Delete %d expired carts" % cart_length, status=status.HTTP_200_OK)
+
+
+class AdminExpireOrders(APIView):
+    authentication_classes = [AdminJWTAuthentication, BasicAuthentication]
+    permission_classes = (IsAuthenticated, IsSuperuser)
+
+    def post(self, request, *args, **kwargs):
+        time, utc_expired_dt = expire_orders()
+        return Response("Update status of orders before UTC %s to fail. " % utc_expired_dt, status=status.HTTP_200_OK)
