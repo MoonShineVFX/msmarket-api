@@ -823,6 +823,16 @@ class OrderTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_admin_expire_orders(self):
+        Order.objects.create(id=1, user=self.user, merchant_order_no="MSM20211227000013", amount=10,
+                             invoice_type=1, status=Order.UNPAID)
+        Order.objects.create(id=2, user=self.user, merchant_order_no="MSM20211227000013", amount=10,
+                             invoice_type=1, status=Order.SUCCESS)
+        Order.objects.create(id=3, user=self.user, merchant_order_no="MSM20211227000013", amount=10,
+                             invoice_type=1, status=Order.CANCEL)
+
+        # set all order created_at expired
+        Order.objects.filter(id__gte=1).update(created_at="2020-01-01 00:00:00")
+
         url = '/api/admin_expire_orders'
 
         self.client.force_authenticate(user=self.admin)
@@ -833,3 +843,6 @@ class OrderTest(TestCase):
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200
+        assert Order.objects.filter(id=1, status=Order.FAIL).exists()
+        assert Order.objects.filter(id=2, status=Order.SUCCESS).exists()
+        assert Order.objects.filter(id=3, status=Order.CANCEL).exists()
