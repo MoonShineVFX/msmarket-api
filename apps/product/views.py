@@ -176,4 +176,4 @@ class AdminModelUploadUrI(GenericAPIView):
                 print("url is empty")
 
             return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
-        return Response(data="User hasn't buy the product", status=status.HTTP_403_FORBIDDEN)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
