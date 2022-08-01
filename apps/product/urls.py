@@ -16,6 +16,8 @@ urlpatterns = [
     url(r'^admin_product_active$', views.AdminProductActive.as_view(), name='admin-product-active'),
 
     url(r'^admin_image_upload$', views.AdminImageUpload.as_view(), name='admin-image-upload'),
+    url(r'^admin_preview_images_upload$', views.AdminPreviewImageListUpload.as_view(),
+        name='admin-preview-image-list-upload'),
     url(r'^admin_image_delete$', views.AdminImageDelete.as_view(), name='admin-image-delete'),
 
     url(r'^admin_model_upload_uri$', views.AdminModelUploadUrI.as_view(), name='admin-model-upload-uri'),
