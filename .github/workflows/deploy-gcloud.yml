@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - release
       - dev
 
 env:
@@ -13,17 +14,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Change SERVICE_NAME if dev
-        if: github.ref == 'refs/heads/dev'
+      - name: Change SERVICE_NAME if not master
+        if: github.ref != 'refs/heads/master'
         run: |
-          echo "SERVICE_NAME=$SERVICE_NAME-dev" >> $GITHUB_ENV
-          echo "SQL_INST=$SQL_INST-dev" >> $GITHUB_ENV
+          echo "SERVICE_NAME=$SERVICE_NAME-$GITHUB_REF_NAME" >> $GITHUB_ENV
+          echo "SQL_INST=$SQL_INST-$GITHUB_REF_NAME" >> $GITHUB_ENV
       - name: Create variables
         id: vars
         run: |
-          branch=${GITHUB_REF##*/}
-          echo "::set-output name=API_HOST::API_HOST_${branch^^}"
-          echo "::set-output name=SQL_HOST::SQL_HOST_${branch^^}"
+          echo "::set-output name=API_HOST::API_HOST_$GITHUB_REF_NAME"
+          echo "::set-output name=SQL_HOST::SQL_HOST_$GITHUB_REF_NAME"
       - name: Checkout repo
         uses: actions/checkout@v2
       - name: Deploy to Cloud Run
