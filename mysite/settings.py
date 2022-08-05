@@ -26,6 +26,8 @@ LOCAL = False
 DEBUG = os.getenv("DEBUG", 'False').lower() in ('true', '1', 't')
 PRODUCTION = os.getenv("PRODUCTION", 'False').lower() in ('true', '1', 't')
 
+BRANCH = os.environ.get('BRANCH', 'dev')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
@@ -236,12 +238,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Google Cloud Storage
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-if PRODUCTION:
-    GS_BUCKET_NAME = 'ms-image-storage'
-else:
-    GS_BUCKET_NAME = 'ms-image-storage-dev'
 
-GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
+
 GS_FILE_OVERWRITE = False
 MEDIA_SERVICE_ACCOUNT_SECRET = os.environ.get('MEDIA_SERVICE_ACCOUNT_SECRET', None)
 UPLOAD_SERVICE_ACCOUNT_SECRET = os.environ.get('UPLOAD_SERVICE_ACCOUNT_SECRET', None)
@@ -255,11 +253,17 @@ if 'test' in sys.argv:
     GOOGLE_RECAPTCHA_SECRET_KEY = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'
 
 
+# Google Cloud Storage
 # url path for image on gcp
 if PRODUCTION:
+    GS_BUCKET_NAME = 'ms-image-storage'
+    GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
     IMAGE_ROOT = 'https://market.moonshine.tw'
 else:
-    IMAGE_ROOT = 'https://market-dev.moonshine.tw'
+    GS_BUCKET_NAME = 'ms-image-storage-{}'.format(BRANCH)
+    GS_INTERNAL_BUCKET_NAME = '3dmodel-storage-{}'.format(BRANCH)
+    IMAGE_ROOT = 'https://market-{}.moonshine.tw'.format(BRANCH)
+
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True
