@@ -19,7 +19,7 @@ class RendererSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class UploadImageSerializer(serializers.ModelSerializer):
+class ImageUploadSerializer(serializers.ModelSerializer):
     productId = serializers.IntegerField(source="product_id", write_only=True)
     positionId = serializers.IntegerField(source="position_id")
     file = serializers.ImageField(write_only=True)
@@ -58,6 +58,28 @@ class UploadImageSerializer(serializers.ModelSerializer):
 
     def get_name(self, instance):
         return instance.file.__str__().rsplit('/', 1)[1] if instance.file else None
+
+
+class PreviewListUploadSerializer(serializers.ModelSerializer):
+    productId = serializers.IntegerField(source="product_id", write_only=True)
+    files = serializers.ListField(
+        child=serializers.ImageField(max_length=None, allow_empty_file=False,
+                                     use_url=False)
+    )
+
+    class Meta:
+        model = Image
+        fields = ("id", "productId", "files")
+
+    def create(self, validated_data):
+        upload_files = validated_data['files']
+
+        for f in upload_files:
+            preview = Image.objects.create(
+                file=f, size=f.size, product_id=validated_data['product_id'], position_id=Image.PREVIEW,
+                creator_id=validated_data['creator_id']
+            )
+        return preview
 
 
 class ImageUrlSerializer(serializers.ModelSerializer):

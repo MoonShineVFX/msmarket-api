@@ -125,8 +125,23 @@ class AdminProductActive(AdminProductUpdate):
 
 class AdminImageUpload(PostCreateView):
     authentication_classes = [AdminJWTAuthentication]
-    serializer_class = serializers.UploadImageSerializer
+    serializer_class = serializers.ImageUploadSerializer
     queryset = Image.objects.all()
+
+
+class AdminPreviewImageListUpload(GenericAPIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.PreviewListUploadSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=self.request.data)
+        if serializer.is_valid():
+            image = serializer.save(**{"creator_id": self.request.user.id})
+            previews = Image.objects.filter(product_id=image.product_id, position_id=Image.PREVIEW).all()
+            dump_serializer = serializers.WebImageSerializer(previews, many=True)
+            return Response({"list": dump_serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminImageDelete(PostDestroyView):
@@ -176,4 +191,4 @@ class AdminModelUploadUrI(GenericAPIView):
                 print("url is empty")
 
             return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
-        return Response(data="User hasn't buy the product", status=status.HTTP_403_FORBIDDEN)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

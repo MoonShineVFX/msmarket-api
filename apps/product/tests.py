@@ -283,6 +283,20 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_admin_preview_images_upload(self):
+        url = '/api/admin_preview_images_upload'
+        data = {
+            'productId': 1,
+            "files": [get_test_image_file(), get_test_image_file()],
+        }
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url, data=data, format='multipart')
+        print(response.data)
+        assert response.status_code == 201
+        assert len(Image.objects.filter(product_id=1, position_id=Image.PREVIEW).all()) == 2
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_admin_image_delete(self):
         Image.objects.create(id=1, product_id=1, file=get_upload_file(file_type='.jpg'), position_id=2, creator_id=1, size=0)
         url = '/api/admin_image_delete'
@@ -362,8 +376,13 @@ class ProductTest(TestCase):
     @override_settings(DEBUG=True)
     @debugger_queries
     def test_convert_key_to_base64(self):
-        s = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDgJOddYeqDwB3D\nWOQZA56sJgobwfko8z7mCb2Ih1NIC6kuu4zyFWjm9MYZUljZpL3PYRZ0xHYVBqsw\n9UqDp6o3IdaufsQiWhhxiycD0JCa7BHRv5gQmAhInYMokl7F1cvAZtdKlCxLuqKC\nYzw9DtYALOd20ChEhpy2cbv0F4JJuOeRI7F+wUBo0U+8fNlfkl4U/Zc8dKd7148J\nbq9QZG0RcMtI9K+JyhXBoHjHNR3TQVKIRfK2LeZVcRnpauombpvc33S9LblJkVKP\ntcQntSlP8IlZlyMT7MQ6QKdWiLSHHW7mONfqscdaDs1rToNEpdHWwqzc0v2YRDxP\nLD7bsrsPAgMBAAECggEATqtlMRde0iMpzxhx5n2owU8QmTF5m+/UEbU1eqfUiSLe\nnHJjQ8xT50veA6EtYiY6IIE4+n7B2xteFm7hWlgMnBEaYmBHwq7QiXmHlgUr29Qj\nZPTUEG7r6WCvWhwVe2ZQfxUZVymual31D8J4sA12+tTH4KGqoHKGqlo8160wo2LE\nO6PV5pJ3K8R78jySgeHqWBZs5Cv/1He76SAl4gJk7LRe7p2hesMy0s/hP8u2l6Ur\nOynvPz8znLm6eeXmindtYlz0aL9BEFytGNc63Q5Nf4MvXLi2YnWU8XuwCNj5cDyv\nSfdIMu6WuJofs10NuJ6RsnrRMeRCf6CW1pd+oV6y4QKBgQD7UldMFQNM38WUJf4N\nwGcGCwNS96KwrIYkL0By2kGFBCV2RS1P8xgRLvRN/xUmbt2sQQ3ZMUhd7vzR/3sl\nYiIRFg5c7DMXweh6hxT1+ZHztF8DpOWAVVpfVupdGlL/DgyGgIrl7dSk6Z8BK0Lx\nHu+zZSbqaD+6pYfw1PWoUlVNFwKBgQDkUQzL3cvG51D2E4pLhDs2RarhY1PHNwyt\ndrRsj6/AJtVGVcv1KhBx4u4vuhGa5CLMq9EJR3quLKe1O0nvRvtGwXLXEYLsriuf\nAv41CRuinJtlQNuJd61yAkrPSwuXf7hYQ2qnmJQbWP0YHUSyj1lcx4WurnoPYCBG\n202RYpjsyQKBgQC1xwbRRtmOPsQ/tYMeGy3pFwoednK76u1TOsIY0HhXZ3pZIwv1\nKdUciKO3zmpT1BiNwLftglHfbz55/ZnqniIZzaQx3b3OzzgBd7bXet3wMWQP1LMS\nsameD9WP5bxmMpkop8zPJciKR1f0ln/iuweQ7/bH0QNXUucScFYGmxaLnQKBgCSw\n8cGBb1ITsmsZUMw5/9oE8CUwdTI6oort3KjlnnTeyL944kIP9HyY33ZEDLg7mWwS\n4JEBL7H18y2ozYTqf08rn2z4n3Wxt8jiDkAvqoVDbaWj+qPo27LKs4MEqGQ8Xj+w\n9d7hIkwSzPmnGncnmlDSr6UW3P7Dj+xTKfAHTFQhAoGBAJQL2+kHh7Bv6G79Mg5F\nJ8uVu+qPdGFnMFZSciiwx7jA+bZFYtMZOJ3nTubsECXISdY/3x3fIGN+d7wDS6jS\nuCIn2iucXPh+RwreFr5mhZjVTTirih3mIsf0I1k5eUOp+ZEZkjpgKCBS4iv2EwLM\ng6YiMA5vqH/oG6oDuRqW55SP\n-----END PRIVATE KEY-----\n"
-        b = s.encode("UTF-8")
-        e = base64.b64encode(b)
-        print(e)
+        from ..storage import dict_to_base64
+        key_dict = {
+            "type": "service_account",
+            "project_id": "my-project",
+        }
+        print(dict_to_base64(key_dict))
+
+
+
 
