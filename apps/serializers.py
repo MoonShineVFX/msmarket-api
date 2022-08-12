@@ -23,6 +23,17 @@ class EditorBaseSerializer(serializers.ModelSerializer):
         return instance.updater.username if instance.updater else ""
 
 
+class CreatorBaseSerializer(serializers.ModelSerializer):
+    createTime = serializers.SerializerMethodField()
+    creator = serializers.SerializerMethodField()
+
+    def get_createTime(self, instance):
+        return instance.created_at if instance.created_at else ""
+
+    def get_creator(self, instance):
+        return instance.creator.username if instance.creator else ""
+
+
 class CustomerTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):

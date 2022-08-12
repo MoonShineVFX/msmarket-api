@@ -385,8 +385,8 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_admin_formats_renderers(self):
-        url = '/api/admin_formats_renderers'
+    def test_admin_admin_product_models(self):
+        url = '/api/admin_products/1/models'
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(url)
         print(response.data)

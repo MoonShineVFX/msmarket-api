@@ -194,15 +194,19 @@ class AdminModelUploadUrI(GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminFormatRendererList(GenericAPIView):
+class AdminProductModelList(GenericAPIView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
-    serializer_class = serializers.MyProductSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, pk, *args, **kwargs):
+        product = get_object_or_404(Product.objects.only("title"), pk=pk)
+        models = Model.objects.filter(product_id=pk).select_related("creator").all()
         formats = Format.objects.all()
         renderers = Renderer.objects.all()
+
         data = {
+            "title": product.title,
+            "models": serializers.AdminModelSerializer(models, many=True).data,
             "formats": serializers.FormatSerializer(formats, many=True).data,
             "renderers": serializers.FormatSerializer(renderers, many=True).data
         }

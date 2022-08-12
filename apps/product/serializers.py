@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import datetime
+from django.utils import timezone
 from django.db.models import Q
 from django.conf import settings
 from rest_framework import serializers
 from .models import Product, Format, Renderer, Model, Image
-from ..serializers import EditorBaseSerializer
+from ..serializers import EditorBaseSerializer, CreatorBaseSerializer
 from ..category.serializers import TagNameOnlySerializer
 
 
@@ -199,6 +201,18 @@ class ModelSerializer(serializers.ModelSerializer):
 
     def get_rendererName(self, instance):
         return instance.renderer.name
+
+
+class AdminModelSerializer(CreatorBaseSerializer):
+    filename = serializers.CharField(source="file")
+    can_delete = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Model
+        fields = ('id', 'filename', 'size', "can_delete", "createTime", "creator")
+
+    def get_can_delete(self, instance):
+        return timezone.now() - instance.created_at > datetime.timedelta(hours=26)
 
 
 class CreateModelSerializer(serializers.ModelSerializer):
