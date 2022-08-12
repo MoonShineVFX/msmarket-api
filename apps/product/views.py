@@ -12,7 +12,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from ..storage import generate_signed_url_v2, generate_signed_url_v2_for_upload
 
-from .models import Product, Model, Image
+from .models import Product, Model, Image, Format, Renderer
 from ..user.models import CustomerProduct
 from . import serializers
 from ..pagination import ProductPagination
@@ -192,3 +192,19 @@ class AdminModelUploadUrI(GenericAPIView):
 
             return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminFormatRendererList(GenericAPIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+    serializer_class = serializers.MyProductSerializer
+
+    def post(self, request, *args, **kwargs):
+        formats = Format.objects.all()
+        renderers = Renderer.objects.all()
+        data = {
+            "formats": serializers.FormatSerializer(formats, many=True).data,
+            "renderers": serializers.FormatSerializer(renderers, many=True).data
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
+

@@ -383,6 +383,15 @@ class ProductTest(TestCase):
         }
         print(dict_to_base64(key_dict))
 
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_formats_renderers(self):
+        url = '/api/admin_formats_renderers'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(url)
+        print(response.data)
+        assert response.status_code == 200
+
 
 
 
