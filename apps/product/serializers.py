@@ -203,6 +203,14 @@ class ModelSerializer(serializers.ModelSerializer):
         return instance.renderer.name
 
 
+class ModelFilenameSizeSerializer(CreatorBaseSerializer):
+    filename = serializers.CharField(source="file")
+
+    class Meta:
+        model = Model
+        fields = ('id', 'filename', 'size')
+
+
 class AdminModelSerializer(CreatorBaseSerializer):
     filename = serializers.CharField(source="file")
     can_delete = serializers.SerializerMethodField()
@@ -280,11 +288,12 @@ class AdminProductListSerializer(ProductListSerializer, EditorBaseSerializer, Ac
 class AdminProductDetailSerializer(ProductDetailSerializer, EditorBaseSerializer):
     isActive = serializers.BooleanField(source="is_active")
     webImages = serializers.SerializerMethodField()
+    models = ModelFilenameSizeSerializer(many=True)
 
     class Meta:
         model = Product
         fields = ('id', 'title', "description", 'price', 'imgUrl', 'modelSum', 'fileSize', 'perImgSize', 'tags',
-                  'isActive', 'webImages', 'previews',
+                  'models', 'isActive', 'webImages', 'previews',
                   "createTime", "updateTime", "creator", "updater")
 
     def get_webImages(self, instance):

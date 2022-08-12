@@ -87,7 +87,7 @@ class AdminProductDetail(RetrieveAPIView):
     serializer_class = serializers.AdminProductDetailSerializer
     queryset = Product.objects.select_related(
         "main_image", "mobile_main_image", "thumb_image", "extend_image",
-        "creator", "updater").prefetch_related("tags", "images")
+        "creator", "updater").prefetch_related("tags", "images", "models")
 
     def post(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
