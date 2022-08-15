@@ -198,7 +198,7 @@ class AdminProductModelList(GenericAPIView):
     authentication_classes = [AdminJWTAuthentication]
     permission_classes = (IsAuthenticated, IsAdminUser)
 
-    def post(self, request, pk, *args, **kwargs):
+    def get(self, request, pk, *args, **kwargs):
         product = get_object_or_404(Product.objects.only("title"), pk=pk)
         models = Model.objects.filter(product_id=pk).select_related("creator").all()
         formats = Format.objects.all()

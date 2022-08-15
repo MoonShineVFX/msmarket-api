@@ -388,7 +388,7 @@ class ProductTest(TestCase):
     def test_admin_admin_product_models(self):
         url = '/api/admin_products/1/models'
         self.client.force_authenticate(user=self.admin)
-        response = self.client.post(url)
+        response = self.client.get(url)
         print(response.data)
         assert response.status_code == 200
 
