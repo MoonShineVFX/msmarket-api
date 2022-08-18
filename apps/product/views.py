@@ -1,4 +1,5 @@
 import requests
+from django.conf import settings
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
@@ -10,7 +11,7 @@ from ..shortcuts import (
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from ..storage import generate_signed_url_v2, generate_signed_url_v2_for_upload
+from ..storage import generate_signed_url_v2, generate_session_uri_for_upload
 
 from .models import Product, Model, Image, Format, Renderer
 from ..user.models import CustomerProduct
@@ -172,25 +173,16 @@ class AdminModelUploadUrI(GenericAPIView):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        session_uri = None
         serializer = serializers.CreateModelSerializer(data=request.data)
         if serializer.is_valid():
             model = serializer.save(**{"creator_id": self.request.user.id})
-            url = generate_signed_url_v2_for_upload(file_path=model.file)
+            session_uri = generate_session_uri_for_upload(file_path=model.file)
 
-            if url:
-                payload = {}
-                headers = {
-                    'x-goog-resumable': 'start',
-                    'Content-Type': 'application/json'
-                }
-
-                response = requests.request("POST", url, headers=headers, data=payload)
-                session_uri = response.headers.get('Location', None)
+            if session_uri:
+                return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
             else:
-                print("url is empty")
+                return Response("session_uri is empty", status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
