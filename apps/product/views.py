@@ -1,5 +1,4 @@
-import requests
-from django.conf import settings
+import datetime
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
@@ -148,6 +147,21 @@ class AdminPreviewImageListUpload(GenericAPIView):
 class AdminImageDelete(PostDestroyView):
     authentication_classes = [AdminJWTAuthentication]
     queryset = Image.objects.all()
+
+
+class AdminModelDelete(PostDestroyView):
+    authentication_classes = [AdminJWTAuthentication]
+    queryset = Model.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if timezone.now() - instance.created_at > datetime.timedelta(hours=26):
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(
+                data="Model is under protection, can't be deleted within 26 hr", status=status.HTTP_400_BAD_REQUEST)
 
 
 class ModelDownloadLink(GenericAPIView):

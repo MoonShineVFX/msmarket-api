@@ -70,6 +70,21 @@ def generate_session_uri_for_upload(file_path=None):
     return session_uri
 
 
+def delete_model(file_path=None):
+    service_account_info = base64_to_dict(setting('UPLOAD_SERVICE_ACCOUNT_SECRET'))
+    credentials = service_account.Credentials.from_service_account_info(
+        service_account_info)
+    bucket_name = setting('GS_INTERNAL_BUCKET_NAME')
+    storage_client = storage.Client(credentials=credentials)
+    bucket = storage_client.get_bucket(bucket_name)
+
+    blob = bucket.blob(file_path)
+    try:
+        blob.delete()
+    except Exception as e:
+        print(e)
+
+
 class PublicGoogleCloudStorage(GoogleCloudStorage):
     def get_default_settings(self):
         return {
