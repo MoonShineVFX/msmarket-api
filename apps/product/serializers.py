@@ -211,13 +211,14 @@ class ModelFilenameSizeSerializer(CreatorBaseSerializer):
         fields = ('id', 'filename', 'size')
 
 
-class AdminModelSerializer(CreatorBaseSerializer):
+class AdminModelSerializer(ModelSerializer, CreatorBaseSerializer):
     filename = serializers.CharField(source="file")
     canDelete = serializers.SerializerMethodField()
 
     class Meta:
         model = Model
-        fields = ('id', 'filename', 'size', "canDelete", "createTime", "creator")
+        fields = ('id', 'formatId', 'formatName', 'rendererId', 'rendererName', 'filename', 'size', "canDelete",
+                  "createTime", "creator")
 
     def get_canDelete(self, instance):
         return timezone.now() - instance.created_at > datetime.timedelta(hours=26)

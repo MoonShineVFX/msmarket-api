@@ -206,7 +206,7 @@ class AdminProductModelList(GenericAPIView):
 
     def get(self, request, pk, *args, **kwargs):
         product = get_object_or_404(Product.objects.only("title"), pk=pk)
-        models = Model.objects.filter(product_id=pk).select_related("creator").all()
+        models = Model.objects.filter(product_id=pk).select_related("format", "renderer", "creator").all()
         formats = Format.objects.all()
         renderers = Renderer.objects.all()
 
