@@ -98,6 +98,19 @@ class AdminObtainTokenView(APIView):
         return response
 
 
+class LogoutView(APIView):
+    authentication_classes = [CustomerJWTAuthentication]
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request):
+        request.session.clear()
+        return Response(status=status.HTTP_200_OK)
+
+
+class AdminLogoutView(LogoutView):
+    authentication_classes = [AdminJWTAuthentication]
+
+
 class CustomerAccountDetailView(RetrieveAPIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
