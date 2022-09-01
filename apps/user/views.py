@@ -104,11 +104,19 @@ class LogoutView(APIView):
 
     def post(self, request):
         request.session.clear()
-        return Response(status=status.HTTP_200_OK)
+        response = Response(status=status.HTTP_200_OK)
+        response.delete_cookie('token')
+        return response
 
 
-class AdminLogoutView(LogoutView):
+class AdminLogoutView(APIView):
     authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, )
+
+    def post(self, request):
+        response = Response(status=status.HTTP_200_OK)
+        response.delete_cookie('admin_token')
+        return response
 
 
 class CustomerAccountDetailView(RetrieveAPIView):
