@@ -1,4 +1,4 @@
-import requests
+import datetime
 from django.utils import timezone
 from django.db.models import Prefetch
 from rest_framework.generics import ListAPIView, RetrieveAPIView, GenericAPIView
@@ -10,9 +10,9 @@ from ..shortcuts import (
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from ..storage import generate_signed_url_v2, generate_signed_url_v2_for_upload
+from ..storage import generate_signed_url_v2, generate_session_uri_for_upload
 
-from .models import Product, Model, Image
+from .models import Product, Model, Image, Format, Renderer
 from ..user.models import CustomerProduct
 from . import serializers
 from ..pagination import ProductPagination
@@ -87,7 +87,7 @@ class AdminProductDetail(RetrieveAPIView):
     serializer_class = serializers.AdminProductDetailSerializer
     queryset = Product.objects.select_related(
         "main_image", "mobile_main_image", "thumb_image", "extend_image",
-        "creator", "updater").prefetch_related("tags", "images")
+        "creator", "updater").prefetch_related("tags", "images", "models")
 
     def post(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -149,6 +149,21 @@ class AdminImageDelete(PostDestroyView):
     queryset = Image.objects.all()
 
 
+class AdminModelDelete(PostDestroyView):
+    authentication_classes = [AdminJWTAuthentication]
+    queryset = Model.objects.all()
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if timezone.now() - instance.created_at > datetime.timedelta(hours=26):
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_200_OK)
+
+        else:
+            return Response(
+                data="Model is under protection, can't be deleted within 26 hr", status=status.HTTP_400_BAD_REQUEST)
+
+
 class ModelDownloadLink(GenericAPIView):
     authentication_classes = [CustomerJWTAuthentication]
     permission_classes = (IsAuthenticated, )
@@ -172,23 +187,34 @@ class AdminModelUploadUrI(GenericAPIView):
     permission_classes = (IsAuthenticated, )
 
     def post(self, request, *args, **kwargs):
-        session_uri = None
         serializer = serializers.CreateModelSerializer(data=request.data)
         if serializer.is_valid():
             model = serializer.save(**{"creator_id": self.request.user.id})
-            url = generate_signed_url_v2_for_upload(file_path=model.file)
+            session_uri = generate_session_uri_for_upload(file_path=model.file)
 
-            if url:
-                payload = {}
-                headers = {
-                    'x-goog-resumable': 'start',
-                    'Content-Type': 'application/json'
-                }
-
-                response = requests.request("POST", url, headers=headers, data=payload)
-                session_uri = response.headers.get('Location', None)
+            if session_uri:
+                return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
             else:
-                print("url is empty")
+                return Response("session_uri is empty", status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(data={"sessionUri": session_uri}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminProductModelList(GenericAPIView):
+    authentication_classes = [AdminJWTAuthentication]
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def get(self, request, pk, *args, **kwargs):
+        product = get_object_or_404(Product.objects.only("title"), pk=pk)
+        models = Model.objects.filter(product_id=pk).select_related("format", "renderer", "creator").all()
+        formats = Format.objects.all()
+        renderers = Renderer.objects.all()
+
+        data = {
+            "title": product.title,
+            "models": serializers.AdminModelSerializer(models, many=True).data,
+            "formats": serializers.FormatSerializer(formats, many=True).data,
+            "renderers": serializers.FormatSerializer(renderers, many=True).data
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
+

@@ -310,6 +310,31 @@ class ProductTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def test_admin_model_delete_under_protect(self):
+        url = '/api/admin_model_delete'
+        data = {
+            'id': 1,
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format='json')
+        print(response.data)
+        assert response.status_code == 400
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_model_delete_no_protect(self):
+        Model.objects.filter(id=1).update(created_at="2020-01-01 00:00:00")
+        url = '/api/admin_model_delete'
+        data = {
+            'id': 1,
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=data, format='json')
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_product_xltn(self):
         url = '/api/product_xltn'
         data = {
@@ -382,6 +407,15 @@ class ProductTest(TestCase):
             "project_id": "my-project",
         }
         print(dict_to_base64(key_dict))
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_admin_admin_product_models(self):
+        url = '/api/admin_products/1/models'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        print(response.data)
+        assert response.status_code == 200
 
 
 

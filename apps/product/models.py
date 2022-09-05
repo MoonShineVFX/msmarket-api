@@ -5,6 +5,7 @@ from apps.category.models import Tag
 from google.cloud import storage
 from django.dispatch import receiver
 from django.conf import settings
+from ..storage import delete_model
 
 
 def get_directory_path(instance, filename):
@@ -112,3 +113,8 @@ def auto_delete_file(sender, instance, **kargs):
         blob.delete()
     except Exception as e:
         print(e)
+
+
+@receiver(models.signals.post_delete, sender=Model)
+def auto_delete_model_file(sender, instance, **kargs):
+    delete_model(instance.file)

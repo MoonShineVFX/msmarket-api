@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import datetime
+from django.utils import timezone
 from django.db.models import Q
 from django.conf import settings
 from rest_framework import serializers
 from .models import Product, Format, Renderer, Model, Image
-from ..serializers import EditorBaseSerializer
+from ..serializers import EditorBaseSerializer, CreatorBaseSerializer
 from ..category.serializers import TagNameOnlySerializer
 
 
@@ -201,6 +203,27 @@ class ModelSerializer(serializers.ModelSerializer):
         return instance.renderer.name
 
 
+class ModelFilenameSizeSerializer(CreatorBaseSerializer):
+    filename = serializers.CharField(source="file")
+
+    class Meta:
+        model = Model
+        fields = ('id', 'filename', 'size')
+
+
+class AdminModelSerializer(ModelSerializer, CreatorBaseSerializer):
+    filename = serializers.CharField(source="file")
+    canDelete = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Model
+        fields = ('id', 'formatId', 'formatName', 'rendererId', 'rendererName', 'filename', 'size', "canDelete",
+                  "createTime", "creator")
+
+    def get_canDelete(self, instance):
+        return timezone.now() - instance.created_at > datetime.timedelta(hours=26)
+
+
 class CreateModelSerializer(serializers.ModelSerializer):
     productId = serializers.IntegerField(source="product_id")
     formatId = serializers.IntegerField(source="format_id")
@@ -266,11 +289,12 @@ class AdminProductListSerializer(ProductListSerializer, EditorBaseSerializer, Ac
 class AdminProductDetailSerializer(ProductDetailSerializer, EditorBaseSerializer):
     isActive = serializers.BooleanField(source="is_active")
     webImages = serializers.SerializerMethodField()
+    models = ModelFilenameSizeSerializer(many=True)
 
     class Meta:
         model = Product
         fields = ('id', 'title', "description", 'price', 'imgUrl', 'modelSum', 'fileSize', 'perImgSize', 'tags',
-                  'isActive', 'webImages', 'previews',
+                  'models', 'isActive', 'webImages', 'previews',
                   "createTime", "updateTime", "creator", "updater")
 
     def get_webImages(self, instance):

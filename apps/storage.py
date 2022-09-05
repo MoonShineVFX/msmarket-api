@@ -51,26 +51,38 @@ def generate_signed_url_v2(file_path=None):
     return signed_url
 
 
-def generate_signed_url_v2_for_upload(file_path=None):
-    #service_account_info = json.load(open('./mysite/ms-model-lib-8441eec6d7eb.json'))
+def generate_session_uri_for_upload(file_path=None):
     service_account_info = base64_to_dict(setting('UPLOAD_SERVICE_ACCOUNT_SECRET'))
     credentials = service_account.Credentials.from_service_account_info(
         service_account_info)
 
     bucket_name = setting('GS_INTERNAL_BUCKET_NAME')
+    origin = "https://{}".format(setting('API_HOST'))
+
+    content_type = "application/x-7z-compressed"
     storage_client = storage.Client(credentials=credentials)
     bucket = storage_client.get_bucket(bucket_name)
 
     blob = bucket.blob(file_path)
-    signed_url = blob.generate_signed_url(
-        version="v4",
-        # This URL is valid for 15 minutes
-        expiration=dt.timedelta(minutes=15),
-        # Allow PUT requests using this URL.
-        method="RESUMABLE",
-        content_type="application/json",
-    )
-    return signed_url
+
+    session_uri = blob.create_resumable_upload_session(content_type=content_type, origin=origin)
+
+    return session_uri
+
+
+def delete_model(file_path=None):
+    service_account_info = base64_to_dict(setting('UPLOAD_SERVICE_ACCOUNT_SECRET'))
+    credentials = service_account.Credentials.from_service_account_info(
+        service_account_info)
+    bucket_name = setting('GS_INTERNAL_BUCKET_NAME')
+    storage_client = storage.Client(credentials=credentials)
+    bucket = storage_client.get_bucket(bucket_name)
+
+    blob = bucket.blob(file_path)
+    try:
+        blob.delete()
+    except Exception as e:
+        print(e)
 
 
 class PublicGoogleCloudStorage(GoogleCloudStorage):

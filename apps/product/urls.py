@@ -20,7 +20,12 @@ urlpatterns = [
         name='admin-preview-image-list-upload'),
     url(r'^admin_image_delete$', views.AdminImageDelete.as_view(), name='admin-image-delete'),
 
+    url(r'^admin_products/(?P<pk>\d+)/models$', views.AdminProductModelList.as_view(),
+        name='admin-product-model-list'),
+
     url(r'^admin_model_upload_uri$', views.AdminModelUploadUrI.as_view(), name='admin-model-upload-uri'),
+
+    url(r'^admin_model_delete$', views.AdminModelDelete.as_view(), name='admin-model-delete'),
 
     url(r'^model_download_link$', views.ModelDownloadLink.as_view(), name='model-download-link'),
 ]
