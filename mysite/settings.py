@@ -262,6 +262,7 @@ if 'test' in sys.argv:
 
 # Google Cloud Storage
 # url path for image on gcp
+GS_CACHE_CONTROL = 'public, max-age=31536000'
 if PRODUCTION:
     GS_BUCKET_NAME = 'ms-image-storage'
     GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
