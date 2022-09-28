@@ -333,7 +333,7 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
-API_HOST = os.environ.get('API_HOST', 'localhost')
+API_HOST = ALLOWED_HOSTS[0] if os.environ.get('API_HOST') is not None else 'localhost'
 PASSWORD_RESET_TIMEOUT = 1800   # 30 min in seconds
 EMAIL_VERIFICATION_TIMEOUT = 86400   # 1 day in seconds
 
