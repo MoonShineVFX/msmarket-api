@@ -160,7 +160,7 @@ DATABASES = {
     # mysql+pymysql://<db_user>:<db_pass>@/<db_name>?unix_socket=<socket_path>/<cloud_sql_instance_name>
     'production': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'msmarket'),
+        'NAME': os.environ.get('DB_NAME', 'msmarket_{}'.format(BRANCH)),
         'USER':  os.environ.get('DB_USER', 'root'),
         'PASSWORD': os.environ.get('DB_PASS', ''),
         # 在上文提到的 Connection Name
@@ -262,7 +262,7 @@ if PRODUCTION:
 else:
     GS_BUCKET_NAME = 'ms-image-storage-{}'.format(BRANCH)
     GS_INTERNAL_BUCKET_NAME = '3dmodel-storage-{}'.format(BRANCH)
-    IMAGE_ROOT = 'https://market-{}.moonshine.tw'.format(BRANCH)
+    IMAGE_ROOT = 'https://storage.googleapis.com/{}'.format(GS_BUCKET_NAME)
 
 
 # django-cors-headers
