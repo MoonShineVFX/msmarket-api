@@ -262,7 +262,7 @@ if PRODUCTION:
 else:
     GS_BUCKET_NAME = 'ms-image-storage-{}'.format(BRANCH)
     GS_INTERNAL_BUCKET_NAME = '3dmodel-storage-{}'.format(BRANCH)
-    IMAGE_ROOT = 'https://market-{}.moonshine.tw'.format(BRANCH)
+    IMAGE_ROOT = 'https://storage.googleapis.com/{}'.format(GS_BUCKET_NAME)
 
 
 # django-cors-headers
