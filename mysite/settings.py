@@ -262,6 +262,7 @@ if 'test' in sys.argv:
 
 # Google Cloud Storage
 # url path for image on gcp
+GS_CACHE_CONTROL = 'public, max-age=31536000'
 if PRODUCTION:
     GS_BUCKET_NAME = 'ms-image-storage'
     GS_INTERNAL_BUCKET_NAME = '3dmodel-storage'
@@ -333,7 +334,7 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 
-API_HOST = os.environ.get('API_HOST', 'localhost')
+API_HOST = ALLOWED_HOSTS[0] if os.environ.get('API_HOST') is not None else 'localhost'
 PASSWORD_RESET_TIMEOUT = 1800   # 30 min in seconds
 EMAIL_VERIFICATION_TIMEOUT = 86400   # 1 day in seconds
 
