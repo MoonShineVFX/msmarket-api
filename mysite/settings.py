@@ -160,7 +160,7 @@ DATABASES = {
     # mysql+pymysql://<db_user>:<db_pass>@/<db_name>?unix_socket=<socket_path>/<cloud_sql_instance_name>
     'production': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'msmarket'),
+        'NAME': os.environ.get('DB_NAME', 'msmarket_{}'.format(BRANCH)),
         'USER':  os.environ.get('DB_USER', 'root'),
         'PASSWORD': os.environ.get('DB_PASS', ''),
         # 在上文提到的 Connection Name
