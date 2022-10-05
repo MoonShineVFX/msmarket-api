@@ -271,7 +271,7 @@ else:
     GS_BUCKET_NAME = 'ms-image-storage-{}'.format(BRANCH)
     GS_INTERNAL_BUCKET_NAME = '3dmodel-storage-{}'.format(BRANCH)
 
-IMAGE_ROOT = ''
+IMAGE_ROOT = 'https://storage.googleapis.com/{}'.format(GS_BUCKET_NAME)
 
 
 # django-cors-headers
