@@ -124,6 +124,7 @@ class UserTest(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data=self.body, format='json')
         print(response.data)
+        print(response.client.cookies.items())
         assert response.status_code == 200
 
     @override_settings(DEBUG=True)

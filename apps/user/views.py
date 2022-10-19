@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta, datetime, time
@@ -69,7 +71,7 @@ class ObtainTokenView(APIView):
         token = str(refresh.access_token)
         self.merge_cart()
         response = Response({"token": token}, status=status.HTTP_200_OK)
-        response.set_cookie(key="token", value=token, httponly=False, max_age=60*60, secure=False, samesite="Strict")
+        response.set_cookie(key="token", value=token, httponly=True, max_age=60*60, secure=True, samesite="None")
         return response
 
     def merge_cart(self, user=None):

@@ -276,6 +276,8 @@ IMAGE_ROOT = 'https://storage.googleapis.com/{}'.format(GS_BUCKET_NAME)
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_REPLACE_HTTPS_REFERER = True
 
 
 # newebpay 金流
