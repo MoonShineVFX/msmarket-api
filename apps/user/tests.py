@@ -1,3 +1,4 @@
+from base64 import b64encode
 from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
@@ -117,6 +118,22 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
+    def _test_send_active_email(self):
+        EmailAddress.objects.create(user=self.user,  verified=False)
+
+        basic_auth = b64encode(b"user01@mail.com:password").decode("ascii")
+
+        url = '/api/send_active_email'
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic %s' % basic_auth
+        }
+        response = self.client.post(url, **auth_headers)
+
+        print(response.data)
+        assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
     def test_customer_login(self):
         self.body = {'recaptcha': '123'}
 
@@ -129,13 +146,49 @@ class UserTest(TestCase):
 
     @override_settings(DEBUG=True)
     @debugger_queries
-    def test_customer_login_without_email_verified(self):
-        EmailAddress.objects.create(user=self.user,  verified=True)
+    def test_customer_login_without_email_verified_and_EmailAddress_verified(self):
+        EmailAddress.objects.create(user=self.user,  verified=False)
 
         self.body = {'recaptcha': '123'}
         url = '/api/guest_login'
         auth_headers = {
             'HTTP_AUTHORIZATION': 'Basic dXNlcjAxQG1haWwuY29tOnBhc3N3b3Jk'
+        }
+        response = self.client.post(url, data=self.body, **auth_headers)
+
+        print(response.data)
+        assert response.status_code == 401
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_customer_login_without_email_verified(self):
+        EmailAddress.objects.create(user=self.user,  verified=True)
+
+        basic_auth = b64encode(b"user01@mail.com:password").decode("ascii")
+
+        self.body = {'recaptcha': '123'}
+        url = '/api/guest_login'
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic %s' % basic_auth
+        }
+        response = self.client.post(url, data=self.body, **auth_headers)
+
+        print(response.data)
+        assert response.status_code == 401
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_customer_login_with_all_email_verified(self):
+        EmailAddress.objects.create(user=self.user,  verified=True)
+        self.user.email_verified = True
+        self.user.save()
+
+        basic_auth = b64encode(b"user01@mail.com:password").decode("ascii")
+
+        self.body = {'recaptcha': '123'}
+        url = '/api/guest_login'
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic %s' % basic_auth
         }
         response = self.client.post(url, data=self.body, **auth_headers)
 
