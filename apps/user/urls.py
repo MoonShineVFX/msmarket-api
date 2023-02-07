@@ -7,6 +7,7 @@ urlpatterns = [
     url(r'^register$', views.RegisterView.as_view(), name='register'),
     url(r'^active_account$',
         views.CustomerActiveAccountView.as_view(), name='customer-active-account'),
+    #url(r'^send_active_email$', views.SendCustomerActiveEmail.as_view(), name='send-active-email'),
 
     url(r'^login$', views.ObtainTokenView.as_view(), name='login'),
     url(r'^guest_login$', views.ObtainTokenView.as_view(), name='guest-login'),
