@@ -272,10 +272,12 @@ else:
     GS_INTERNAL_BUCKET_NAME = '3dmodel-storage-{}'.format(BRANCH)
 
 IMAGE_ROOT = 'https://storage.googleapis.com/{}'.format(GS_BUCKET_NAME)
-
+API_HOST = ALLOWED_HOSTS[0] if os.environ.get('API_HOST') is not None else 'localhost'
 
 # django-cors-headers
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_REPLACE_HTTPS_REFERER = True
 
 
 # newebpay 金流
@@ -284,7 +286,7 @@ NEWEBPAY_HASHKEY = os.environ.get('NEWEBPAY_HASHKEY', "1234567891234567891234567
 NEWEBPAY_HASHIV = os.environ.get('NEWEBPAY_HASHIV', "1234567891234567")
 NEWEBPAY_TRADE_LIMIT = os.environ.get('NEWEBPAY_TRADE_LIMIT', 900)
 NEWEBPAY_EXPIRE_DAY = os.environ.get('NEWEBPAY_EXPIRE_DAY', 3)
-NEWEBPAY_CLIENT_BACK_URL = IMAGE_ROOT
+NEWEBPAY_CLIENT_BACK_URL = os.environ.get('NEWEBPAY_CLIENT_BACK_URL', "https://{}/product/list?page=1".format(API_HOST))
 
 # ezpay
 EZPAY_ID = os.environ.get('EZPAY_ID', 'ID')
@@ -306,6 +308,13 @@ REST_AUTH_TOKEN_MODEL = None
 JWT_AUTH_COOKIE = "token"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "email"
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+
+
+# django SESSION_COOKIE settings
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+
 
 REST_AUTH_SERIALIZERS = {
     "JWT_TOKEN_CLAIMS_SERIALIZER": "apps.serializers.CustomerTokenObtainPairSerializer"
@@ -333,8 +342,6 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-
-API_HOST = ALLOWED_HOSTS[0] if os.environ.get('API_HOST') is not None else 'localhost'
 PASSWORD_RESET_TIMEOUT = 1800   # 30 min in seconds
 EMAIL_VERIFICATION_TIMEOUT = 86400   # 1 day in seconds
 

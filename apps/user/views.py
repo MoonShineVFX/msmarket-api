@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta, datetime, time
@@ -36,13 +38,13 @@ class RegisterView(APIView):
         serializer = serializers.RegisterCustomerSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            self.send_active_mail(user=user)
+            self.send_active_email(user=user)
             response = Response({}, status=status.HTTP_200_OK)
             return response
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def send_active_mail(self, user):
+    def send_active_email(self, user):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = active_account_token_generator.make_token(user)
         body = '親愛的會員您好：\n' \
@@ -51,6 +53,17 @@ class RegisterView(APIView):
                '＊網址有效期限為1天內\n' \
                '此郵件為系統自動寄發，請勿直接回覆。'.format(settings.API_HOST, uid, token)
         send_mail('moonshine模型庫 帳號啟用信', body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+
+
+class SendCustomerActiveEmail(RegisterView):
+    authentication_classes = (BasicAuthentication,)
+    permission_classes = ()
+
+    def post(self, request):
+        print(request.user)
+        self.send_active_email(user=request.user)
+        response = Response({}, status=status.HTTP_200_OK)
+        return response
 
 
 class ObtainTokenView(APIView):
@@ -69,7 +82,7 @@ class ObtainTokenView(APIView):
         token = str(refresh.access_token)
         self.merge_cart()
         response = Response({"token": token}, status=status.HTTP_200_OK)
-        response.set_cookie(key="token", value=token, httponly=False, max_age=60*60, secure=False, samesite="Strict")
+        response.set_cookie(key="token", value=token, httponly=True, max_age=60*60, secure=True, samesite="None")
         return response
 
     def merge_cart(self, user=None):
