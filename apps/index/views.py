@@ -13,6 +13,7 @@ from ..authentications import AdminJWTAuthentication, CustomerJWTAuthentication
 
 from .models import Banner, Tutorial, AboutUs, Privacy
 from ..product.models import Product, Image
+from ..order.models import Currency
 from ..category.models import Tag
 from ..lang.models import LangConfig
 
@@ -40,9 +41,12 @@ class CommonView(APIView, SwitchLangMixin):
         self.set_language()
         tags = Tag.objects.all()
         lang_config = LangConfig.objects.only('updated_at').latest('updated_at')
+        usd_currency = Currency.objects.first()
+        fx_rate = usd_currency.currency if usd_currency else 1
         data = {
             "tags": TagNameOnlySerializer(tags, many=True).data,
-            "langConfigUpdatedAt": lang_config.updated_at
+            "langConfigUpdatedAt": lang_config.updated_at,
+            "fxRate": fx_rate
         }
         data.update(CommonCustomerSerializer(request.user).data)
         return Response(data, status=status.HTTP_200_OK)
