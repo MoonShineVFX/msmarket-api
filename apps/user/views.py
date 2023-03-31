@@ -324,7 +324,8 @@ class AdminChangePasswordView(APIView):
 
 
 admin_profile = AdminProfile.objects.select_related("creator", "updater")
-admin_queryset = User.objects.prefetch_related(Prefetch('admin_profile', queryset=admin_profile)).filter(is_staff=True)
+admin_queryset = User.objects.prefetch_related(Prefetch('admin_profile', queryset=admin_profile)).filter(
+    is_staff=True, is_deleted=False)
 
 
 class AdminUserList(PostListView):

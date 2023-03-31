@@ -26,7 +26,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     is_anonymous = False
-    is_authenticated = True
+
+    @property
+    def is_authenticated(self):
+        return not self.is_deleted
 
     def __unicode__(self):
         return self.email
