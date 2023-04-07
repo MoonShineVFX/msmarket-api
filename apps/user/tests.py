@@ -19,8 +19,11 @@ class UserTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.admin = User.objects.create(id=2, name="admin", email="admin@mail.com", is_staff=True)
-        self.admin_2 = User.objects.create(id=3, name="admin2", email="admin2@mail.com", is_staff=True, is_superuser=True)
+        self.admin_2 = User.objects.create(id=3, name="admin2", email="admin2@mail.com", is_staff=True,
+                                           is_superuser=True)
         self.user = User.objects.create(id=1, name="user01", email="user01@mail.com")
+        deleted_admin = User.objects.create(id=4, name="deleted_admin", email="deleted_admin@mail.com", is_staff=True,
+                                            is_superuser=True, is_deleted=True)
 
         self.admin.set_password("password")
         self.admin.save()
@@ -143,6 +146,21 @@ class UserTest(TestCase):
         print(response.data)
         print(response.client.cookies.items())
         assert response.status_code == 200
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_customer_login_with_deleted(self):
+        self.user.is_deleted = True
+        self.user.save()
+
+        self.body = {'recaptcha': '123'}
+
+        url = '/api/login'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data=self.body, format='json')
+        print(response.data)
+        assert response.data['detail'] == '您没有执行该操作的权限。'
+        assert response.status_code == 403
 
     @override_settings(DEBUG=True)
     @debugger_queries
@@ -430,6 +448,24 @@ class UserTest(TestCase):
         response = self.client.post(url)
         print(response.data)
         assert response.status_code == 200
+        for user in response.data['list']:
+            assert user['account'] != "deleted_admin@mail.com"
+
+    @override_settings(DEBUG=True)
+    @debugger_queries
+    def test_deleted_admin_perms(self):
+        self.admin.is_deleted = True
+        self.admin.save()
+
+        url = '/api/admin_account_search'
+        self.client.force_authenticate(user=self.admin)
+        data = {
+            "query": "admin2",
+        }
+        response = self.client.post(url, data=data, format="json")
+        print(response.data)
+        assert response.status_code == 403
+
 
     @override_settings(DEBUG=True)
     @debugger_queries
